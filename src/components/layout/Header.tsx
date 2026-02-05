@@ -34,6 +34,9 @@ export function Header() {
     setEditingSteps,
     goToNextStep,
     goToPrevStep,
+    editingStepId,
+    setEditingStepId,
+    createStep,
   } = useCanvasStore();
 
   // Check if we're on the import page with canvas open
@@ -54,10 +57,11 @@ export function Header() {
 
   // Keyboard: ArrowLeft / ArrowRight
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (editingStepId) return; // Disable during inline editing
     if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
     if (e.key === 'ArrowRight' && !isLast) { e.preventDefault(); goToNextStep(); }
     if (e.key === 'ArrowLeft' && !isFirst) { e.preventDefault(); goToPrevStep(); }
-  }, [goToNextStep, goToPrevStep, isFirst, isLast]);
+  }, [goToNextStep, goToPrevStep, isFirst, isLast, editingStepId]);
 
   useEffect(() => {
     if (!hasActive) return;
@@ -65,10 +69,21 @@ export function Header() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [hasActive, handleKeyDown]);
 
+  const handleCreateAndEdit = useCallback(() => {
+    const id = createStep();
+    setEditingStepId(id);
+  }, [createStep, setEditingStepId]);
+
   const handleStepClick = useCallback((stepId: string) => {
+    if (editingStepId) return; // Disable during inline editing
+    if (isStepperActive && activeStepId === stepId) {
+      // Повторный клик по активному → редактирование нод на канвасе
+      setEditingStepId(stepId);
+      return;
+    }
     if (!isStepperActive) toggleStepper(true);
     setActiveStep(stepId);
-  }, [isStepperActive, toggleStepper, setActiveStep]);
+  }, [isStepperActive, toggleStepper, setActiveStep, editingStepId, activeStepId, setEditingStepId]);
 
   // Format time helper
   const formatTime = (isoString: string) => {
@@ -181,7 +196,7 @@ export function Header() {
                   {/* Prev arrow */}
                   <button
                     onClick={goToPrevStep}
-                    disabled={!hasActive || isFirst}
+                    disabled={!hasActive || isFirst || !!editingStepId}
                     className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                     title={t('header.previous')}
                   >
@@ -259,7 +274,7 @@ export function Header() {
                   {/* Next arrow */}
                   <button
                     onClick={goToNextStep}
-                    disabled={!hasActive || isLast}
+                    disabled={!hasActive || isLast || !!editingStepId}
                     className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
                     title={t('header.next')}
                   >
@@ -305,7 +320,7 @@ export function Header() {
                   <div className="relative flex items-center">
                     <div className="w-8 h-[2px] bg-gray-200 dark:bg-gray-600 rounded-full" />
                     <motion.button
-                      onClick={() => setEditingSteps(true)}
+                      onClick={handleCreateAndEdit}
                       whileHover={{ scale: 1.15 }}
                       whileTap={{ scale: 0.9 }}
                       className="relative z-10 w-6 h-6 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-500 hover:border-blue-400 flex items-center justify-center transition-colors outline-none bg-white dark:bg-gray-800"

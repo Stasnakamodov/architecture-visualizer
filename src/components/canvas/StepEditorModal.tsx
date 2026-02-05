@@ -19,6 +19,7 @@ export function StepEditorModal() {
     saveStepViewport,
     toggleStepper,
     setActiveStep,
+    setEditingStepId,
   } = useCanvasStore();
 
   const { t } = useTranslation();
@@ -60,22 +61,10 @@ export function StepEditorModal() {
     reorderSteps(newSteps);
   };
 
-  const handleToggleNode = (nodeId: string) => {
-    if (!selectedStep) return;
-    const newNodeIds = selectedStep.nodeIds.includes(nodeId)
-      ? selectedStep.nodeIds.filter(id => id !== nodeId)
-      : [...selectedStep.nodeIds, nodeId];
-    updateStep(selectedStep.id, { nodeIds: newNodeIds });
-  };
-
-  const handleSelectAll = () => {
-    if (!selectedStep) return;
-    updateStep(selectedStep.id, { nodeIds: nodes.map(n => n.id) });
-  };
-
-  const handleDeselectAll = () => {
-    if (!selectedStep) return;
-    updateStep(selectedStep.id, { nodeIds: [] });
+  const handleSelectOnCanvas = () => {
+    if (!selectedStepId) return;
+    setEditingSteps(false);
+    setEditingStepId(selectedStepId);
   };
 
   const handleSaveViewport = () => {
@@ -278,62 +267,25 @@ export function StepEditorModal() {
                     )}
                   </div>
 
-                  {/* Node selection */}
+                  {/* Node selection — on canvas */}
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {t('stepEditor.nodesCount', { selected: selectedStep.nodeIds.length, total: nodes.length })}
-                      </label>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleSelectAll}
-                          className="text-xs text-blue-600 hover:text-blue-700"
-                        >
-                          {t('stepEditor.selectAll')}
-                        </button>
-                        <button
-                          onClick={handleDeselectAll}
-                          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          {t('stepEditor.deselectAll')}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl">
-                      {nodes.map((node) => {
-                        const isSelected = selectedStep.nodeIds.includes(node.id);
-                        return (
-                          <label
-                            key={node.id}
-                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer border-b border-gray-50 dark:border-gray-800 last:border-0 transition-colors ${
-                              isSelected ? 'bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleToggleNode(node.id)}
-                              className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500"
-                            />
-                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                              node.type === 'tech' ? 'bg-blue-500' :
-                              node.type === 'database' ? 'bg-purple-500' :
-                              node.type === 'business' ? 'bg-indigo-500' :
-                              node.type === 'group' ? 'bg-gray-500' :
-                              node.type === 'comment' ? 'bg-amber-500' :
-                              node.type === 'shape' ? 'bg-cyan-500' : 'bg-gray-400'
-                            }`} />
-                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                              {node.data?.label || node.id}
-                            </span>
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-auto flex-shrink-0">{node.type}</span>
-                          </label>
-                        );
-                      })}
-                      {nodes.length === 0 && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-4">{t('stepEditor.noNodes')}</p>
-                      )}
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      {t('stepEditor.nodesCount', { selected: selectedStep.nodeIds.length, total: nodes.length })}
+                    </label>
+                    <button
+                      onClick={handleSelectOnCanvas}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                      </svg>
+                      {t('stepEditor.selectOnCanvas')}
+                    </button>
+                    {selectedStep.nodeIds.length > 0 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 text-center">
+                        {t('stepEditor.nodesSelected', { count: selectedStep.nodeIds.length })}
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : (

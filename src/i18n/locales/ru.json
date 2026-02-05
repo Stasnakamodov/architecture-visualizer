@@ -171,7 +171,13 @@
     "deselectAll": "Снять все",
     "noNodes": "Нет нод на канвасе",
     "selectOrCreate": "Выберите шаг или создайте новый",
-    "done": "Готово"
+    "done": "Готово",
+    "selectOnCanvas": "Выбрать ноды на канвасе",
+    "editingStep": "Редактирование шага",
+    "nodesSelected": "{count} нод выбрано",
+    "clickToToggle": "Нажмите на ноды для выбора",
+    "doneEditing": "Готово",
+    "cancelEditing": "Отмена"
   },
   "stepper": {
     "noSteps": "Нет шагов",

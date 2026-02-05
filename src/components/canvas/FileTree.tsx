@@ -74,6 +74,10 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
     selectedForGroup,
     startGroupSelection,
     cancelGroupSelection,
+    editingStepId,
+    toggleNodeInStep,
+    steps,
+    updateStep,
   } = useCanvasStore();
 
   const { t } = useTranslation();
@@ -213,6 +217,10 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
   }, [isDraggingDivider]);
 
   const selectedForGroupSet = useMemo(() => new Set(selectedForGroup), [selectedForGroup]);
+
+  // Inline step editing
+  const editingStep = useMemo(() => steps.find(s => s.id === editingStepId) ?? null, [steps, editingStepId]);
+  const editingNodeSet = useMemo(() => editingStep ? new Set(editingStep.nodeIds) : null, [editingStep]);
 
   const handleCreateDocument = (folderId: string | null = null) => {
     const docId = createDocument(folderId);
@@ -410,6 +418,10 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
   };
 
   const handleNodeClick = (nodeId: string) => {
+    if (editingStepId) {
+      toggleNodeInStep(nodeId);
+      return;
+    }
     selectNode(nodeId);
     onNodeSelect?.(nodeId);
   };
@@ -870,45 +882,77 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
               };
               const style = typeStyles[type] || typeStyles.group;
 
+              // Type-group checkbox helpers for step editing
+              const typeNodeIds = typeNodes.map(n => n.id);
+              const allTypeInStep = editingNodeSet !== null && typeNodeIds.every(id => editingNodeSet.has(id));
+              const someTypeInStep = editingNodeSet !== null && typeNodeIds.some(id => editingNodeSet.has(id));
+
+              const handleToggleTypeGroup = (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (!editingStep || !editingStepId) return;
+                const typeSet = new Set(typeNodeIds);
+                if (allTypeInStep) {
+                  // Remove all type nodes
+                  updateStep(editingStepId, { nodeIds: editingStep.nodeIds.filter(id => !typeSet.has(id)) });
+                } else {
+                  // Add all type nodes
+                  const merged = [...new Set([...editingStep.nodeIds, ...typeNodeIds])];
+                  updateStep(editingStepId, { nodeIds: merged });
+                }
+              };
+
               return (
                 <div key={type}>
-                  <button
-                    onClick={() => toggleGroup(type)}
-                    className={`w-full flex items-center rounded-xl transition-all ${
-                      isIconMode
-                        ? `justify-center p-2 ${style.bg} ${style.hoverBg} hover:scale-105`
-                        : 'gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                    title={isIconMode ? `${label} (${typeNodes.length})` : undefined}
-                  >
-                    {!isIconMode && (
-                      <svg
-                        className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
+                  <div className={`flex items-center ${!isIconMode ? 'gap-1' : ''}`}>
+                    {/* Type-group checkbox when editing step */}
+                    {editingNodeSet !== null && !isIconMode && (
+                      <input
+                        type="checkbox"
+                        checked={allTypeInStep}
+                        ref={(el) => { if (el) el.indeterminate = someTypeInStep && !allTypeInStep; }}
+                        onChange={() => {}}
+                        onClick={handleToggleTypeGroup}
+                        className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500 flex-shrink-0 ml-1 cursor-pointer"
+                      />
                     )}
-                    {isIconMode ? (
-                      <div className="relative">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${style.text}`}>
-                          <span className="scale-125">{icon}</span>
+                    <button
+                      onClick={() => toggleGroup(type)}
+                      className={`flex-1 flex items-center rounded-xl transition-all ${
+                        isIconMode
+                          ? `justify-center p-2 ${style.bg} ${style.hoverBg} hover:scale-105`
+                          : 'gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                      title={isIconMode ? `${label} (${typeNodes.length})` : undefined}
+                    >
+                      {!isIconMode && (
+                        <svg
+                          className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {isIconMode ? (
+                        <div className="relative">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${style.text}`}>
+                            <span className="scale-125">{icon}</span>
+                          </div>
+                          <span className={`absolute -top-1 -right-1 text-[10px] text-white ${style.badge} rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-medium shadow-sm`}>
+                            {typeNodes.length}
+                          </span>
                         </div>
-                        <span className={`absolute -top-1 -right-1 text-[10px] text-white ${style.badge} rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-medium shadow-sm`}>
-                          {typeNodes.length}
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className={`${getTypeColor(type)} flex-shrink-0`}>{icon}</span>
-                        <span className={`font-medium text-gray-700 dark:text-gray-300 flex-1 text-left truncate ${isCompactMode ? 'text-xs' : 'text-sm'}`}>
-                          {isCompactMode ? label.slice(0, 4) : label}
-                        </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded flex-shrink-0">{typeNodes.length}</span>
-                      </>
-                    )}
-                  </button>
+                      ) : (
+                        <>
+                          <span className={`${getTypeColor(type)} flex-shrink-0`}>{icon}</span>
+                          <span className={`font-medium text-gray-700 dark:text-gray-300 flex-1 text-left truncate ${isCompactMode ? 'text-xs' : 'text-sm'}`}>
+                            {isCompactMode ? label.slice(0, 4) : label}
+                          </span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded flex-shrink-0">{typeNodes.length}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
                   <AnimatePresence>
                     {isExpanded && !isIconMode && (
@@ -924,19 +968,32 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                             const data = node.data as any;
                             const hasContent = !!data?.fullContent;
                             return (
-                              <button
-                                key={node.id}
-                                onClick={() => handleNodeClick(node.id)}
-                                className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-left transition-colors ${
-                                  selectedNodeId === node.id
-                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200'
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                                }`}
-                                title={isCompactMode ? node.data.label : undefined}
-                              >
-                                <span className={`${getTypeColor(node.type)} flex-shrink-0`}>{getNodeIcon(node.type, hasContent)}</span>
-                                <span className={`truncate flex-1 ${isCompactMode ? 'text-xs' : 'text-sm'}`}>{node.data.label}</span>
-                              </button>
+                              <div key={node.id} className="flex items-center gap-1">
+                                {editingNodeSet && (
+                                  <input
+                                    type="checkbox"
+                                    checked={editingNodeSet.has(node.id)}
+                                    onChange={() => toggleNodeInStep(node.id)}
+                                    className="w-3.5 h-3.5 text-blue-600 rounded focus:ring-blue-500 flex-shrink-0 cursor-pointer"
+                                  />
+                                )}
+                                <button
+                                  onClick={() => handleNodeClick(node.id)}
+                                  className={`flex-1 flex items-center gap-1.5 px-2 py-1 rounded-lg text-left transition-colors ${
+                                    editingNodeSet
+                                      ? editingNodeSet.has(node.id)
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-200'
+                                        : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      : selectedNodeId === node.id
+                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                  }`}
+                                  title={isCompactMode ? node.data.label : undefined}
+                                >
+                                  <span className={`${getTypeColor(node.type)} flex-shrink-0`}>{getNodeIcon(node.type, hasContent)}</span>
+                                  <span className={`truncate flex-1 ${isCompactMode ? 'text-xs' : 'text-sm'}`}>{node.data.label}</span>
+                                </button>
+                              </div>
                             );
                           })}
                         </div>

@@ -32,6 +32,7 @@ import { ShapeToolbar } from './ShapeToolbar';
 import { LayoutToolbar } from './LayoutToolbar';
 import { HistoryControls } from './HistoryControls';
 import { PropertyPanel } from './PropertyPanel';
+import { StepEditToolbar } from './StepEditToolbar';
 import { useTemporalStore } from './useTemporalStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useHydration } from '@/hooks/useHydration';
@@ -125,6 +126,9 @@ function CanvasViewerInner({
     activeStepId,
     isStepperActive,
     getVisibleNodeIdsForStep,
+    editingStepId,
+    toggleNodeInStep,
+    cancelStepEditing,
   } = useCanvasStore();
 
   const reactFlow = useReactFlow();
@@ -257,6 +261,13 @@ function CanvasViewerInner({
     return getVisibleNodeIdsForStep();
   }, [getVisibleNodeIdsForStep, steps, activeStepId, isStepperActive]);
 
+  // Inline step editing: compute which nodes are in the editing step
+  const editingStepNodeIds = useMemo(() => {
+    if (!editingStepId) return null;
+    const step = steps.find(s => s.id === editingStepId);
+    return step ? new Set(step.nodeIds) : new Set<string>();
+  }, [editingStepId, steps]);
+
   // Stepper: animate viewport on step change
   const prevActiveStepId = useRef<string | null>(null);
   useEffect(() => {
@@ -303,6 +314,27 @@ function CanvasViewerInner({
     if (viewMode === 'executive') {
       result = nodes.filter((n) => ['business', 'group'].includes(n.type || ''));
     }
+
+    // Inline step editing mode: override all dimming
+    if (editingStepNodeIds !== null) {
+      return result.map((node) => {
+        const isInEditingStep = editingStepNodeIds.has(node.id);
+        return {
+          ...node,
+          selected: false, // suppress React Flow selection ring
+          className: isInEditingStep ? 'ring-4 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900' : '',
+          style: {
+            ...node.style,
+            opacity: isInEditingStep ? 1 : 0.3,
+            transition: 'opacity 0.3s ease, box-shadow 0.2s ease',
+            boxShadow: isInEditingStep
+              ? '0 0 0 4px rgba(59, 130, 246, 0.5)'
+              : undefined,
+          },
+        };
+      });
+    }
+
     // Layer 2 & 3: Stepper + Collection — soft dimming
     return result.map((node) => {
       const isInActiveGroup = activeGroupNodeIds ? activeGroupNodeIds.has(node.id) : true;
@@ -328,7 +360,7 @@ function CanvasViewerInner({
         },
       };
     });
-  }, [nodes, viewMode, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, isSelectingForGroup, selectedForGroupSet]);
+  }, [nodes, viewMode, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, isSelectingForGroup, selectedForGroupSet, editingStepNodeIds]);
 
   // Node type to color mapping (matches node border colors)
   const typeColors: Record<string, string> = {
@@ -357,6 +389,27 @@ function CanvasViewerInner({
         const isSelected = selectedNodeId
           ? edge.source === selectedNodeId || edge.target === selectedNodeId
           : false;
+
+        // Inline step editing mode: override edge dimming
+        if (editingStepNodeIds !== null) {
+          const bothInStep = editingStepNodeIds.has(edge.source) && editingStepNodeIds.has(edge.target);
+          return {
+            ...edge,
+            type: 'custom',
+            selected: false,
+            style: {
+              opacity: bothInStep ? 1 : 0.15,
+              transition: 'opacity 0.3s ease',
+            },
+            data: {
+              ...edge.data,
+              sourceColor: typeColors[sourceNode?.type || ''] || '#6366f1',
+              targetColor: typeColors[targetNode?.type || ''] || '#6366f1',
+              showGradient: bothInStep,
+              usePresentationRouting,
+            },
+          };
+        }
 
         // Check if edge connects nodes in active group
         const isInActiveGroup = activeGroupNodeIds
@@ -397,7 +450,7 @@ function CanvasViewerInner({
           },
         };
       });
-  }, [edges, filteredNodes, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, usePresentationRouting]);
+  }, [edges, filteredNodes, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, usePresentationRouting, editingStepNodeIds]);
 
   const handleNodesChange: OnNodesChange<AppNode> = useCallback(
     (changes) => {
@@ -460,13 +513,15 @@ function CanvasViewerInner({
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: AppNode) => {
-      if (isSelectingForGroup) {
+      if (editingStepId) {
+        toggleNodeInStep(node.id);
+      } else if (isSelectingForGroup) {
         toggleNodeForGroup(node.id);
       } else {
         selectNode(node.id);
       }
     },
-    [selectNode, isSelectingForGroup, toggleNodeForGroup]
+    [selectNode, isSelectingForGroup, toggleNodeForGroup, editingStepId, toggleNodeInStep]
   );
 
   const onNodeDoubleClick = useCallback(
@@ -544,9 +599,12 @@ function CanvasViewerInner({
       return;
     }
 
+    // During inline step editing, skip deselection
+    if (editingStepId) return;
+
     selectNode(null);
     clearSelection();
-  }, [selectNode, clearSelection, activeTool, pendingShapeType, screenToFlowPosition, createShape, setNodes, markDirty]);
+  }, [selectNode, clearSelection, activeTool, pendingShapeType, screenToFlowPosition, createShape, setNodes, markDirty, editingStepId]);
 
   // Double click on pane to create a comment
   const onPaneDoubleClick = useCallback((event: React.MouseEvent) => {
@@ -775,6 +833,11 @@ function CanvasViewerInner({
           style={{ width: 120, height: 80 }}
         />
       </ReactFlow>
+
+      {/* Step Edit Toolbar */}
+      <AnimatePresence>
+        {editingStepId && <StepEditToolbar />}
+      </AnimatePresence>
 
       {/* Collection Selection Mode Indicator */}
       {isSelectingForGroup && (

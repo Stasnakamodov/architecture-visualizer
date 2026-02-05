@@ -85,6 +85,10 @@ interface CanvasState {
   isStepperActive: boolean;
   isEditingSteps: boolean;
 
+  // Inline step editing
+  editingStepId: string | null;
+  editingStepOriginalNodeIds: string[];
+
   // Layout reset
   preLayoutPositions: Record<string, { x: number; y: number }> | null;
 
@@ -149,6 +153,12 @@ interface CanvasState {
   saveStepViewport: (stepId: string, viewport: { x: number; y: number; zoom: number }) => void;
   getVisibleNodeIdsForStep: () => Set<string> | null;
 
+  // Inline step editing actions
+  setEditingStepId: (id: string | null) => void;
+  toggleNodeInStep: (nodeId: string) => void;
+  cancelStepEditing: () => void;
+  confirmStepEditing: () => void;
+
   // Layout actions
   savePreLayoutPositions: () => void;
   resetToPreLayout: () => void;
@@ -212,6 +222,9 @@ const initialState = {
   activeStepId: null as string | null,
   isStepperActive: false,
   isEditingSteps: false,
+  // Inline step editing
+  editingStepId: null as string | null,
+  editingStepOriginalNodeIds: [] as string[],
   // Layout reset
   preLayoutPositions: null as Record<string, { x: number; y: number }> | null,
   // Current layout type
@@ -259,6 +272,8 @@ export const useCanvasStore = create<CanvasState>()(
           activeStepId: null,
           isStepperActive: false,
           isEditingSteps: false,
+          editingStepId: null,
+          editingStepOriginalNodeIds: [],
         }),
         createGroup: (label) => {
           const { nodes, selectedNodeIds, edges } = get();
@@ -519,7 +534,16 @@ export const useCanvasStore = create<CanvasState>()(
 
         // Group selection mode
         startGroupSelection: () => {
-          set({ isSelectingForGroup: true, selectedForGroup: [] });
+          const { editingStepId, editingStepOriginalNodeIds, steps } = get();
+          // Cancel step editing if active
+          if (editingStepId) {
+            const restoredSteps = steps.map(s =>
+              s.id === editingStepId ? { ...s, nodeIds: editingStepOriginalNodeIds } : s
+            );
+            set({ isSelectingForGroup: true, selectedForGroup: [], steps: restoredSteps, editingStepId: null, editingStepOriginalNodeIds: [] });
+          } else {
+            set({ isSelectingForGroup: true, selectedForGroup: [] });
+          }
         },
 
         cancelGroupSelection: () => {
@@ -565,7 +589,7 @@ export const useCanvasStore = create<CanvasState>()(
         },
 
         deleteStep: (id) => {
-          const { steps, activeStepId } = get();
+          const { steps, activeStepId, editingStepId } = get();
           const filtered = steps.filter(s => s.id !== id);
           // Reorder remaining steps
           const reordered = filtered.map((s, i) => ({ ...s, order: i }));
@@ -573,6 +597,7 @@ export const useCanvasStore = create<CanvasState>()(
             steps: reordered,
             activeStepId: activeStepId === id ? (reordered[0]?.id || null) : activeStepId,
             isStepperActive: reordered.length > 0 ? get().isStepperActive : false,
+            ...(editingStepId === id ? { editingStepId: null, editingStepOriginalNodeIds: [] } : {}),
           });
           get().markDirty();
         },
@@ -647,6 +672,59 @@ export const useCanvasStore = create<CanvasState>()(
             sorted[i].nodeIds.forEach(id => ids.add(id));
           }
           return ids;
+        },
+
+        // Inline step editing actions
+        setEditingStepId: (id) => {
+          if (id === null) {
+            set({ editingStepId: null, editingStepOriginalNodeIds: [] });
+            return;
+          }
+          const { steps, isSelectingForGroup } = get();
+          const step = steps.find(s => s.id === id);
+          if (!step) return;
+          set({
+            editingStepId: id,
+            editingStepOriginalNodeIds: [...step.nodeIds],
+            isStepperActive: true,
+            activeStepId: id,
+            // Cancel group selection if active
+            ...(isSelectingForGroup ? { isSelectingForGroup: false, selectedForGroup: [] } : {}),
+          });
+        },
+
+        toggleNodeInStep: (nodeId) => {
+          const { editingStepId, steps } = get();
+          if (!editingStepId) return;
+          set({
+            steps: steps.map(s => {
+              if (s.id !== editingStepId) return s;
+              const has = s.nodeIds.includes(nodeId);
+              return {
+                ...s,
+                nodeIds: has
+                  ? s.nodeIds.filter(id => id !== nodeId)
+                  : [...s.nodeIds, nodeId],
+              };
+            }),
+          });
+        },
+
+        cancelStepEditing: () => {
+          const { editingStepId, editingStepOriginalNodeIds, steps } = get();
+          if (!editingStepId) return;
+          set({
+            steps: steps.map(s =>
+              s.id === editingStepId ? { ...s, nodeIds: editingStepOriginalNodeIds } : s
+            ),
+            editingStepId: null,
+            editingStepOriginalNodeIds: [],
+          });
+        },
+
+        confirmStepEditing: () => {
+          set({ editingStepId: null, editingStepOriginalNodeIds: [] });
+          get().markDirty();
         },
 
         // Shape creation actions
@@ -788,6 +866,8 @@ export const useCanvasStore = create<CanvasState>()(
               activeStepId: null,
               isStepperActive: false,
               isEditingSteps: false,
+              editingStepId: null,
+              editingStepOriginalNodeIds: [],
             });
 
             return { success: true };

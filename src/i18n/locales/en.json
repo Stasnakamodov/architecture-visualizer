@@ -171,7 +171,13 @@
     "deselectAll": "Deselect all",
     "noNodes": "No nodes on canvas",
     "selectOrCreate": "Select a step or create a new one",
-    "done": "Done"
+    "done": "Done",
+    "selectOnCanvas": "Select nodes on canvas",
+    "editingStep": "Editing step",
+    "nodesSelected": "{count} nodes selected",
+    "clickToToggle": "Click nodes to add/remove",
+    "doneEditing": "Done",
+    "cancelEditing": "Cancel"
   },
   "stepper": {
     "noSteps": "No steps",
