@@ -126,6 +126,8 @@ export function duplicateCanvas(id: string): SavedCanvas | null {
     nodes: canvas.nodes,
     edges: canvas.edges,
     viewport: canvas.viewport,
+    visualGroups: canvas.visualGroups,
+    steps: canvas.steps,
   });
 }
 
@@ -194,6 +196,8 @@ export function importCanvas(jsonString: string): SavedCanvas | null {
       nodes: data.nodes,
       edges: data.edges,
       viewport: data.viewport || { x: 0, y: 0, zoom: 1 },
+      visualGroups: data.visualGroups,
+      steps: data.steps,
     });
   } catch {
     return null;
