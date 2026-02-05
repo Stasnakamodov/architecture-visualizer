@@ -1,0 +1,131 @@
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 250,
+      "height": 100,
+      "text": "Next.js Frontend",
+      "color": "4"
+    },
+    {
+      "id": "node-2",
+      "type": "text",
+      "x": 350,
+      "y": 0,
+      "width": 250,
+      "height": 100,
+      "text": "API Endpoints",
+      "color": "5"
+    },
+    {
+      "id": "node-3",
+      "type": "text",
+      "x": 700,
+      "y": 0,
+      "width": 250,
+      "height": 100,
+      "text": "Supabase Database",
+      "color": "6"
+    },
+    {
+      "id": "node-4",
+      "type": "text",
+      "x": 175,
+      "y": 200,
+      "width": 200,
+      "height": 80,
+      "text": "React Components"
+    },
+    {
+      "id": "node-5",
+      "type": "text",
+      "x": 525,
+      "y": 200,
+      "width": 200,
+      "height": 80,
+      "text": "Server Actions"
+    },
+    {
+      "id": "node-6",
+      "type": "group",
+      "x": -50,
+      "y": -50,
+      "width": 600,
+      "height": 350,
+      "label": "Application Layer"
+    },
+    {
+      "id": "node-7",
+      "type": "text",
+      "x": 700,
+      "y": 150,
+      "width": 250,
+      "height": 60,
+      "text": "PostgreSQL Tables",
+      "color": "6"
+    },
+    {
+      "id": "node-8",
+      "type": "text",
+      "x": 700,
+      "y": 230,
+      "width": 250,
+      "height": 60,
+      "text": "RLS Policies",
+      "color": "6"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "fromNode": "node-1",
+      "fromSide": "right",
+      "toNode": "node-2",
+      "toSide": "left",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "edge-2",
+      "fromNode": "node-2",
+      "fromSide": "right",
+      "toNode": "node-3",
+      "toSide": "left",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "edge-3",
+      "fromNode": "node-1",
+      "fromSide": "bottom",
+      "toNode": "node-4",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "edge-4",
+      "fromNode": "node-2",
+      "fromSide": "bottom",
+      "toNode": "node-5",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "edge-5",
+      "fromNode": "node-3",
+      "fromSide": "bottom",
+      "toNode": "node-7",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "edge-6",
+      "fromNode": "node-7",
+      "fromSide": "bottom",
+      "toNode": "node-8",
+      "toSide": "top",
+      "toEnd": "arrow"
+    }
+  ]
+}
