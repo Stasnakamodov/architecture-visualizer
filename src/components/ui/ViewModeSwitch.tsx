@@ -2,17 +2,19 @@
 
 import { motion } from 'framer-motion';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useTranslation } from '@/i18n/context';
 
 export function ViewModeSwitch() {
   const { viewMode, setViewMode } = useCanvasStore();
+  const { t } = useTranslation();
 
   return (
-    <div className="inline-flex rounded-lg bg-gray-100 p-1">
+    <div className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
       <button
         onClick={() => setViewMode('technical')}
         className={`
           relative px-4 py-2 text-sm font-medium rounded-md transition-colors
-          ${viewMode === 'technical' ? 'text-white' : 'text-gray-600 hover:text-gray-900'}
+          ${viewMode === 'technical' ? 'text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}
         `}
       >
         {viewMode === 'technical' && (
@@ -31,7 +33,7 @@ export function ViewModeSwitch() {
               d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
             />
           </svg>
-          Technical
+          {t('viewMode.technical')}
         </span>
       </button>
 
@@ -39,7 +41,7 @@ export function ViewModeSwitch() {
         onClick={() => setViewMode('executive')}
         className={`
           relative px-4 py-2 text-sm font-medium rounded-md transition-colors
-          ${viewMode === 'executive' ? 'text-white' : 'text-gray-600 hover:text-gray-900'}
+          ${viewMode === 'executive' ? 'text-white' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'}
         `}
       >
         {viewMode === 'executive' && (
@@ -58,7 +60,7 @@ export function ViewModeSwitch() {
               d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
             />
           </svg>
-          Executive
+          {t('viewMode.executive')}
         </span>
       </button>
     </div>

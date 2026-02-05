@@ -79,6 +79,20 @@ export type AppEdgeData = {
 
 export type AppEdge = Edge<AppEdgeData>;
 
+// Step types
+export type StepMode = 'cumulative' | 'independent';
+
+export interface Step {
+  id: string;
+  name: string;
+  description: string;
+  order: number;
+  mode: StepMode;
+  nodeIds: string[];
+  viewport?: { x: number; y: number; zoom: number } | null;
+  createdAt: string;
+}
+
 // View modes
 export type ViewMode = 'technical' | 'executive';
 

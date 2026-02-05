@@ -9,6 +9,7 @@ import {
   getStorageStats,
   type SavedCanvas,
 } from '@/lib/storage/localStorage';
+import { useTranslation } from '@/i18n/context';
 
 interface SavedCanvasesProps {
   onLoad: (canvas: SavedCanvas) => void;
@@ -16,6 +17,7 @@ interface SavedCanvasesProps {
 }
 
 export function SavedCanvases({ onLoad, onClose }: SavedCanvasesProps) {
+  const { t } = useTranslation();
   const [canvases, setCanvases] = useState<SavedCanvas[]>([]);
   const [stats, setStats] = useState({ canvasCount: 0, totalSize: '0 B' });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -52,12 +54,12 @@ export function SavedCanvases({ onLoad, onClose }: SavedCanvasesProps) {
       const hours = Math.floor(diff / (1000 * 60 * 60));
       if (hours === 0) {
         const minutes = Math.floor(diff / (1000 * 60));
-        return minutes <= 1 ? 'Just now' : `${minutes}m ago`;
+        return minutes <= 1 ? t('dialogs.justNow') : t('dialogs.minutesAgo', { m: minutes });
       }
-      return `${hours}h ago`;
+      return t('dialogs.hoursAgo', { h: hours });
     }
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days}d ago`;
+    if (days === 1) return t('dialogs.yesterday');
+    if (days < 7) return t('dialogs.daysAgo', { d: days });
 
     return date.toLocaleDateString('ru-RU', {
       day: 'numeric',
@@ -77,22 +79,22 @@ export function SavedCanvases({ onLoad, onClose }: SavedCanvasesProps) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl dark:shadow-gray-950 w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Saved Canvases</h2>
-            <p className="text-sm text-gray-500">
-              {stats.canvasCount} canvases · {stats.totalSize}
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('dialogs.savedCanvasesTitle')}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t('dialogs.savedCanvasesStats', { count: stats.canvasCount, size: stats.totalSize })}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -102,18 +104,18 @@ export function SavedCanvases({ onLoad, onClose }: SavedCanvasesProps) {
         <div className="flex-1 overflow-y-auto p-4">
           {canvases.length === 0 ? (
             <div className="text-center py-12">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              <p className="text-gray-500 mb-2">No saved canvases yet</p>
-              <p className="text-sm text-gray-400">Import a folder and save it to see it here</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-2">{t('dialogs.noSavedCanvases')}</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t('dialogs.noSavedHint')}</p>
             </div>
           ) : (
             <div className="space-y-2">
               {canvases.map((canvas) => (
                 <div
                   key={canvas.id}
-                  className="group flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+                  className="group flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors cursor-pointer"
                   onClick={() => onLoad(canvas)}
                 >
                   {/* Icon */}
@@ -125,14 +127,14 @@ export function SavedCanvases({ onLoad, onClose }: SavedCanvasesProps) {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 truncate">{canvas.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {canvas.nodes.length} nodes · {canvas.edges.length} edges
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">{canvas.name}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {t('dialogs.nodesEdges', { nodes: canvas.nodes.length, edges: canvas.edges.length })}
                     </p>
                   </div>
 
                   {/* Date */}
-                  <div className="text-sm text-gray-400 flex-shrink-0">
+                  <div className="text-sm text-gray-400 dark:text-gray-500 flex-shrink-0">
                     {formatDate(canvas.updatedAt)}
                   </div>
 
@@ -140,10 +142,10 @@ export function SavedCanvases({ onLoad, onClose }: SavedCanvasesProps) {
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleDuplicate(canvas.id)}
-                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                      title="Duplicate"
+                      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                      title={t('dialogs.duplicate')}
                     >
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     </button>
@@ -152,12 +154,12 @@ export function SavedCanvases({ onLoad, onClose }: SavedCanvasesProps) {
                       className={`p-2 rounded-lg transition-colors ${
                         confirmDelete === canvas.id
                           ? 'bg-red-100 hover:bg-red-200'
-                          : 'hover:bg-gray-200'
+                          : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
-                      title={confirmDelete === canvas.id ? 'Click again to confirm' : 'Delete'}
+                      title={confirmDelete === canvas.id ? t('dialogs.confirmDelete') : t('dialogs.delete')}
                     >
                       <svg
-                        className={`w-4 h-4 ${confirmDelete === canvas.id ? 'text-red-600' : 'text-gray-500'}`}
+                        className={`w-4 h-4 ${confirmDelete === canvas.id ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

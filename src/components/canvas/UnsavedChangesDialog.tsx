@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useTranslation } from '@/i18n/context';
 
 interface UnsavedChangesDialogProps {
   onSave: () => void;
@@ -13,6 +14,8 @@ export function UnsavedChangesDialog({
   onDiscard,
   onCancel,
 }: UnsavedChangesDialogProps) {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -25,11 +28,11 @@ export function UnsavedChangesDialog({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl dark:shadow-gray-950 w-full max-w-sm overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,11 +40,11 @@ export function UnsavedChangesDialog({
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Unsaved Changes
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {t('dialogs.unsavedTitle')}
               </h2>
-              <p className="text-sm text-gray-500">
-                Your changes haven't been saved
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('dialogs.unsavedSubtitle')}
               </p>
             </div>
           </div>
@@ -49,31 +52,31 @@ export function UnsavedChangesDialog({
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-sm text-gray-600">
-            Do you want to save your changes before leaving? If you don't save, your changes will be lost.
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t('dialogs.unsavedMessage')}
           </p>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex flex-col gap-2">
+        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-2">
           <button
             onClick={onSave}
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium text-sm"
           >
-            Save & Exit
+            {t('dialogs.saveExit')}
           </button>
           <div className="flex gap-2">
             <button
               onClick={onDiscard}
               className="flex-1 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors text-sm"
             >
-              Discard
+              {t('dialogs.discard')}
             </button>
             <button
               onClick={onCancel}
-              className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors text-sm"
+              className="flex-1 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors text-sm"
             >
-              Cancel
+              {t('dialogs.cancel')}
             </button>
           </div>
         </div>

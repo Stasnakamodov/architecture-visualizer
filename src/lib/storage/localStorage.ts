@@ -1,4 +1,4 @@
-import type { AppNode, AppEdge } from '@/types/canvas';
+import type { AppNode, AppEdge, Step } from '@/types/canvas';
 
 export interface VisualGroup {
   id: string;
@@ -17,6 +17,7 @@ export interface SavedCanvas {
   edges: AppEdge[];
   viewport: { x: number; y: number; zoom: number };
   visualGroups?: VisualGroup[];
+  steps?: Step[];
   thumbnail?: string;
 }
 

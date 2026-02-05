@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getAllCanvases, deleteCanvas, type SavedCanvas } from '@/lib/storage/localStorage';
+import { useTranslation } from '@/i18n/context';
 
 // Format date
 function formatDate(isoString: string): string {
@@ -96,6 +97,7 @@ const nodeColors: Record<string, { bg: string; border: string }> = {
 
 // Canvas Preview Component
 function CanvasPreview({ canvas }: { canvas: SavedCanvas }) {
+  const { t } = useTranslation();
   const previewData = useMemo(() => {
     if (canvas.nodes.length === 0) return null;
 
@@ -172,7 +174,7 @@ function CanvasPreview({ canvas }: { canvas: SavedCanvas }) {
   if (!previewData) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <div className="text-gray-400 text-sm">Empty canvas</div>
+        <div className="text-gray-400 dark:text-gray-500 text-sm">{t('projects.emptyCanvas')}</div>
       </div>
     );
   }
@@ -212,6 +214,7 @@ function CanvasPreview({ canvas }: { canvas: SavedCanvas }) {
 }
 
 export default function ProjectsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [canvases, setCanvases] = useState<SavedCanvas[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -238,11 +241,11 @@ export default function ProjectsPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-48 mb-4" />
-          <div className="h-4 bg-gray-200 rounded w-96 mb-8" />
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-96 mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 bg-gray-200 rounded-2xl" />
+              <div key={i} className="h-64 bg-gray-200 dark:bg-gray-700 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -254,11 +257,11 @@ export default function ProjectsPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Projects</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('projects.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400">
             {canvases.length > 0
-              ? `${canvases.length} saved project${canvases.length !== 1 ? 's' : ''}`
-              : 'Your saved architecture diagrams'}
+              ? t('projects.count', { count: canvases.length })
+              : t('projects.subtitle')}
           </p>
         </div>
         <Link
@@ -268,7 +271,7 @@ export default function ProjectsPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New Project
+          {t('projects.newProject')}
         </Link>
       </div>
 
@@ -282,7 +285,7 @@ export default function ProjectsPage() {
             return (
               <div
                 key={canvas.id}
-                className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100"
+                className="group relative bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-sm dark:shadow-gray-950 hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-800"
               >
                 {/* Preview */}
                 <div
@@ -296,7 +299,7 @@ export default function ProjectsPage() {
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/5 transition-colors" />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg">
+                    <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg dark:shadow-gray-950">
                       <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -309,7 +312,7 @@ export default function ProjectsPage() {
                 <div className="p-4">
                   {/* Title */}
                   <h3
-                    className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors mb-2 truncate"
+                    className="font-semibold text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 transition-colors mb-2 truncate"
                     onClick={() => handleOpen(canvas)}
                   >
                     {canvas.name}
@@ -317,21 +320,21 @@ export default function ProjectsPage() {
 
                   {/* Quick stats with type breakdown */}
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm text-gray-500">{totalNodes} nodes</span>
-                    <span className="text-gray-300">·</span>
-                    <span className="text-sm text-gray-500">{canvas.edges.length} links</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('projects.nodes', { count: totalNodes })}</span>
+                    <span className="text-gray-300 dark:text-gray-600">·</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('projects.links', { count: canvas.edges.length })}</span>
 
                     {/* Type distribution mini-bar */}
                     {typeDistribution.length > 0 && (
                       <>
-                        <span className="text-gray-300">·</span>
+                        <span className="text-gray-300 dark:text-gray-600">·</span>
                         <div className="flex gap-0.5">
-                          {typeDistribution.slice(0, 4).map((t, i) => (
+                          {typeDistribution.slice(0, 4).map((td, i) => (
                             <div
                               key={i}
                               className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: t.color }}
-                              title={`${t.type}: ${t.count}`}
+                              style={{ backgroundColor: td.color }}
+                              title={`${td.type}: ${td.count}`}
                             />
                           ))}
                         </div>
@@ -342,19 +345,19 @@ export default function ProjectsPage() {
                   {/* Hub nodes (most connected) */}
                   {hubNodes.length > 0 && (
                     <div className="mb-3">
-                      <div className="text-xs text-gray-400 mb-1.5">Key components</div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mb-1.5">{t('projects.keyComponents')}</div>
                       <div className="flex flex-wrap gap-1.5">
                         {hubNodes.map((node, i) => (
                           <span
                             key={i}
-                            className="inline-flex items-center gap-1 text-xs bg-gray-50 text-gray-700 px-2 py-1 rounded-md"
+                            className="inline-flex items-center gap-1 text-xs bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-md"
                           >
                             <span
                               className="w-1.5 h-1.5 rounded-full"
                               style={{ backgroundColor: nodeColors[node.type]?.bg || '#9ca3af' }}
                             />
                             {node.label}
-                            <span className="text-gray-400 text-[10px]">({node.connections})</span>
+                            <span className="text-gray-400 dark:text-gray-500 text-[10px]">({node.connections})</span>
                           </span>
                         ))}
                       </div>
@@ -362,15 +365,15 @@ export default function ProjectsPage() {
                   )}
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <span className="text-xs text-gray-400">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
                       {formatDate(canvas.updatedAt)}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpen(canvas)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Open"
+                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                        title={t('projects.open')}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -378,8 +381,8 @@ export default function ProjectsPage() {
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(canvas.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
+                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        title={t('projects.delete')}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -391,27 +394,27 @@ export default function ProjectsPage() {
 
                 {/* Delete Confirmation */}
                 {deleteConfirm === canvas.id && (
-                  <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 rounded-2xl">
+                  <div className="absolute inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 rounded-2xl">
                     <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mb-3">
                       <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </div>
-                    <p className="text-sm text-gray-700 mb-4 text-center">
-                      Delete "<span className="font-medium">{canvas.name}</span>"?
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-4 text-center">
+                      {t('dialogs.confirmDeleteProject', { name: canvas.name })}
                     </p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setDeleteConfirm(null)}
-                        className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                        className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                       >
-                        Cancel
+                        {t('projects.cancel')}
                       </button>
                       <button
                         onClick={() => handleDelete(canvas.id)}
                         className="px-4 py-2 text-sm bg-red-500 text-white hover:bg-red-600 rounded-lg"
                       >
-                        Delete
+                        {t('projects.delete')}
                       </button>
                     </div>
                   </div>
@@ -422,13 +425,13 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="text-center py-16">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No projects yet</h3>
-          <p className="text-gray-500 mb-6">Import your first architecture diagram</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('projects.noProjects')}</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">{t('projects.noProjectsHint')}</p>
           <Link
             href="/import"
             className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -436,7 +439,7 @@ export default function ProjectsPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Import Canvas
+            {t('projects.importCanvas')}
           </Link>
         </div>
       )}

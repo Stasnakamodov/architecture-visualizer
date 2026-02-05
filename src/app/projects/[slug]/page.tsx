@@ -62,22 +62,22 @@ export default async function ProjectPage({ params }: PageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-          <a href="/projects" className="hover:text-gray-900">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <a href="/projects" className="hover:text-gray-900 dark:hover:text-gray-100">
             Projects
           </a>
           <span>/</span>
-          <span className="text-gray-900">{project.name}</span>
+          <span className="text-gray-900 dark:text-gray-100">{project.name}</span>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.name}</h1>
-        <p className="text-gray-600 mb-4">{project.description}</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{project.name}</h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">{project.description}</p>
 
         <div className="flex flex-wrap gap-2">
           {project.tags.map((tag) => (
             <span
               key={tag}
-              className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+              className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-full"
             >
               {tag}
             </span>
@@ -86,9 +86,9 @@ export default async function ProjectPage({ params }: PageProps) {
       </div>
 
       {/* Placeholder for canvas viewer */}
-      <div className="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-16 text-center">
+      <div className="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 p-16 text-center">
         <svg
-          className="w-16 h-16 text-gray-300 mx-auto mb-4"
+          className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -100,10 +100,10 @@ export default async function ProjectPage({ params }: PageProps) {
             d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
           />
         </svg>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
           Canvas Preview
         </h3>
-        <p className="text-gray-500 mb-4">
+        <p className="text-gray-500 dark:text-gray-400 mb-4">
           Connect Supabase to load canvas data for this project
         </p>
         <a

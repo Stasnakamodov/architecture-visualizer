@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { saveCanvas, updateCanvas, type SavedCanvas, type VisualGroup } from '@/lib/storage/localStorage';
 import { useCanvasStore } from '@/stores/canvasStore';
-import type { AppNode, AppEdge } from '@/types/canvas';
+import { useTranslation } from '@/i18n/context';
+import type { AppNode, AppEdge, Step } from '@/types/canvas';
 
 interface SaveDialogProps {
   nodes: AppNode[];
   edges: AppEdge[];
   viewport: { x: number; y: number; zoom: number };
   visualGroups?: VisualGroup[];
+  steps?: Step[];
   existingCanvas?: SavedCanvas | null;
   onSave: (canvas: SavedCanvas) => void;
   onClose: () => void;
@@ -21,10 +23,12 @@ export function SaveDialog({
   edges,
   viewport,
   visualGroups = [],
+  steps = [],
   existingCanvas,
   onSave,
   onClose,
 }: SaveDialogProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(existingCanvas?.name || '');
   const [saveAsNew, setSaveAsNew] = useState(false);
   const markClean = useCanvasStore((state) => state.markClean);
@@ -42,6 +46,7 @@ export function SaveDialog({
         edges,
         viewport,
         visualGroups,
+        steps: steps.length > 0 ? steps : undefined,
       });
     } else {
       // Save as new
@@ -51,6 +56,7 @@ export function SaveDialog({
         edges,
         viewport,
         visualGroups,
+        steps: steps.length > 0 ? steps : undefined,
       });
     }
 
@@ -74,28 +80,28 @@ export function SaveDialog({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl dark:shadow-gray-950 w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {existingCanvas && !saveAsNew ? 'Save Canvas' : 'Save As'}
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {existingCanvas && !saveAsNew ? t('dialogs.saveCanvas') : t('dialogs.saveAs')}
           </h2>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Canvas Name
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              {t('dialogs.canvasName')}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter canvas name..."
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder={t('dialogs.enterName')}
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSave();
@@ -112,35 +118,35 @@ export function SaveDialog({
                 onChange={(e) => setSaveAsNew(e.target.checked)}
                 className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-600">Save as new canvas</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('dialogs.saveAsNew')}</span>
             </label>
           )}
 
-          <div className="bg-gray-50 rounded-xl p-4">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Nodes</span>
-              <span className="font-medium text-gray-900">{nodes.length}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('dialogs.nodesLabel')}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{nodes.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-gray-500">Edges</span>
-              <span className="font-medium text-gray-900">{edges.length}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('dialogs.edgesLabel')}</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{edges.length}</span>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
           >
-            Cancel
+            {t('dialogs.cancel')}
           </button>
           <button
             onClick={handleSave}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium"
           >
-            {existingCanvas && !saveAsNew ? 'Save' : 'Save As New'}
+            {existingCanvas && !saveAsNew ? t('dialogs.save') : t('dialogs.saveAsNewBtn')}
           </button>
         </div>
       </motion.div>

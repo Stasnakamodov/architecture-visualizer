@@ -7,6 +7,7 @@ import {
   parseJSONCanvas,
 } from '@/lib/converters/jsonCanvasToReactFlow';
 import type { AppNode, AppEdge } from '@/types/canvas';
+import { useTranslation } from '@/i18n/context';
 
 interface CanvasDropzoneProps {
   onImport: (data: {
@@ -17,6 +18,7 @@ interface CanvasDropzoneProps {
 }
 
 export function CanvasDropzone({ onImport }: CanvasDropzoneProps) {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -61,8 +63,8 @@ export function CanvasDropzone({ onImport }: CanvasDropzoneProps) {
         transition-all duration-200
         ${
           isDragActive
-            ? 'border-blue-500 bg-blue-50 scale-[1.02]'
-            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 scale-[1.02]'
+            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
         }
         ${isProcessing ? 'opacity-50 cursor-wait' : ''}
       `}
@@ -71,7 +73,7 @@ export function CanvasDropzone({ onImport }: CanvasDropzoneProps) {
 
       <svg
         className={`w-12 h-12 mx-auto mb-4 transition-colors ${
-          isDragActive ? 'text-blue-500' : 'text-gray-400'
+          isDragActive ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'
         }`}
         fill="none"
         stroke="currentColor"
@@ -86,15 +88,13 @@ export function CanvasDropzone({ onImport }: CanvasDropzoneProps) {
       </svg>
 
       {isProcessing ? (
-        <p className="text-gray-600">Processing...</p>
+        <p className="text-gray-600 dark:text-gray-400">{t('canvasDropzone.processing')}</p>
       ) : isDragActive ? (
-        <p className="text-blue-600 font-medium">Drop the .canvas file here</p>
+        <p className="text-blue-600 font-medium">{t('canvasDropzone.dropHere')}</p>
       ) : (
         <>
-          <p className="text-gray-600 mb-1">
-            Drag & drop a <code className="text-blue-600">.canvas</code> file
-          </p>
-          <p className="text-gray-400 text-sm">or click to select</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-1">{t('canvasDropzone.dragDrop')}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm">{t('canvasDropzone.orClick')}</p>
         </>
       )}
 

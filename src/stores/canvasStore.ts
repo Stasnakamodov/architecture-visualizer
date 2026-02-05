@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { temporal } from 'zundo';
 import type { Viewport, XYPosition } from '@xyflow/react';
-import type { AppNode, AppEdge, AppEdgeData, ViewMode, ShapeType, ShapeNodeData } from '@/types/canvas';
+import type { AppNode, AppEdge, AppEdgeData, ViewMode, ShapeType, ShapeNodeData, Step, StepMode } from '@/types/canvas';
 import type { LayoutType } from '@/lib/layout';
 
 // Save status types
@@ -79,6 +79,12 @@ interface CanvasState {
   currentCanvasName: string | null;
   requestSaveDialog: boolean;
 
+  // Stepper
+  steps: Step[];
+  activeStepId: string | null;
+  isStepperActive: boolean;
+  isEditingSteps: boolean;
+
   // Layout reset
   preLayoutPositions: Record<string, { x: number; y: number }> | null;
 
@@ -128,6 +134,20 @@ interface CanvasState {
   createShape: (position: XYPosition, shapeType: ShapeType, data?: Partial<ShapeNodeData>) => string;
   updateShapeProperties: (nodeId: string, properties: Partial<ShapeNodeData>) => void;
   updateEdgeProperties: (edgeId: string, properties: Partial<AppEdgeData>) => void;
+
+  // Stepper actions
+  setSteps: (steps: Step[]) => void;
+  createStep: (name?: string) => string;
+  updateStep: (id: string, updates: Partial<Pick<Step, 'name' | 'description' | 'mode' | 'nodeIds' | 'viewport'>>) => void;
+  deleteStep: (id: string) => void;
+  reorderSteps: (steps: Step[]) => void;
+  setActiveStep: (id: string | null) => void;
+  goToNextStep: () => void;
+  goToPrevStep: () => void;
+  toggleStepper: (active?: boolean) => void;
+  setEditingSteps: (editing: boolean) => void;
+  saveStepViewport: (stepId: string, viewport: { x: number; y: number; zoom: number }) => void;
+  getVisibleNodeIdsForStep: () => Set<string> | null;
 
   // Layout actions
   savePreLayoutPositions: () => void;
@@ -187,6 +207,11 @@ const initialState = {
   currentCanvasId: null as string | null,
   currentCanvasName: null as string | null,
   requestSaveDialog: false,
+  // Stepper
+  steps: [] as Step[],
+  activeStepId: null as string | null,
+  isStepperActive: false,
+  isEditingSteps: false,
   // Layout reset
   preLayoutPositions: null as Record<string, { x: number; y: number }> | null,
   // Current layout type
@@ -230,6 +255,10 @@ export const useCanvasStore = create<CanvasState>()(
           currentCanvasId: null,
           currentCanvasName: null,
           requestSaveDialog: false,
+          steps: [],
+          activeStepId: null,
+          isStepperActive: false,
+          isEditingSteps: false,
         }),
         createGroup: (label) => {
           const { nodes, selectedNodeIds, edges } = get();
@@ -506,6 +535,120 @@ export const useCanvasStore = create<CanvasState>()(
           }
         },
 
+        // Stepper actions
+        setSteps: (steps) => set({ steps }),
+
+        createStep: (name) => {
+          const { steps } = get();
+          const stepId = `step-${Date.now()}`;
+          const newStep: Step = {
+            id: stepId,
+            name: name || `Step ${steps.length + 1}`,
+            description: '',
+            order: steps.length,
+            mode: 'independent',
+            nodeIds: [],
+            viewport: null,
+            createdAt: new Date().toISOString(),
+          };
+          set({ steps: [...steps, newStep] });
+          get().markDirty();
+          return stepId;
+        },
+
+        updateStep: (id, updates) => {
+          const { steps } = get();
+          set({
+            steps: steps.map(s => s.id === id ? { ...s, ...updates } : s),
+          });
+          get().markDirty();
+        },
+
+        deleteStep: (id) => {
+          const { steps, activeStepId } = get();
+          const filtered = steps.filter(s => s.id !== id);
+          // Reorder remaining steps
+          const reordered = filtered.map((s, i) => ({ ...s, order: i }));
+          set({
+            steps: reordered,
+            activeStepId: activeStepId === id ? (reordered[0]?.id || null) : activeStepId,
+            isStepperActive: reordered.length > 0 ? get().isStepperActive : false,
+          });
+          get().markDirty();
+        },
+
+        reorderSteps: (steps) => {
+          set({ steps: steps.map((s, i) => ({ ...s, order: i })) });
+          get().markDirty();
+        },
+
+        setActiveStep: (id) => {
+          set({ activeStepId: id });
+          // Navigation does NOT markDirty
+        },
+
+        goToNextStep: () => {
+          const { steps, activeStepId } = get();
+          if (steps.length === 0) return;
+          const sorted = [...steps].sort((a, b) => a.order - b.order);
+          const currentIndex = sorted.findIndex(s => s.id === activeStepId);
+          const nextIndex = Math.min(currentIndex + 1, sorted.length - 1);
+          set({ activeStepId: sorted[nextIndex].id });
+        },
+
+        goToPrevStep: () => {
+          const { steps, activeStepId } = get();
+          if (steps.length === 0) return;
+          const sorted = [...steps].sort((a, b) => a.order - b.order);
+          const currentIndex = sorted.findIndex(s => s.id === activeStepId);
+          const prevIndex = Math.max(currentIndex - 1, 0);
+          set({ activeStepId: sorted[prevIndex].id });
+        },
+
+        toggleStepper: (active) => {
+          const { isStepperActive, steps } = get();
+          const newActive = active !== undefined ? active : !isStepperActive;
+          set({
+            isStepperActive: newActive,
+            activeStepId: newActive && steps.length > 0
+              ? ([...steps].sort((a, b) => a.order - b.order)[0]?.id || null)
+              : null,
+          });
+        },
+
+        setEditingSteps: (editing) => {
+          set({ isEditingSteps: editing });
+        },
+
+        saveStepViewport: (stepId, viewport) => {
+          const { steps } = get();
+          set({
+            steps: steps.map(s => s.id === stepId ? { ...s, viewport } : s),
+          });
+          get().markDirty();
+        },
+
+        getVisibleNodeIdsForStep: () => {
+          const { steps, activeStepId, isStepperActive } = get();
+          if (!isStepperActive || !activeStepId) return null;
+
+          const sorted = [...steps].sort((a, b) => a.order - b.order);
+          const activeStep = sorted.find(s => s.id === activeStepId);
+          if (!activeStep) return null;
+
+          if (activeStep.mode === 'independent') {
+            return new Set(activeStep.nodeIds);
+          }
+
+          // Cumulative: union of all steps from 0 to current
+          const activeIndex = sorted.findIndex(s => s.id === activeStepId);
+          const ids = new Set<string>();
+          for (let i = 0; i <= activeIndex; i++) {
+            sorted[i].nodeIds.forEach(id => ids.add(id));
+          }
+          return ids;
+        },
+
         // Shape creation actions
         setActiveTool: (tool) => set({ activeTool: tool }),
 
@@ -610,11 +753,11 @@ export const useCanvasStore = create<CanvasState>()(
 
         // Persistence actions
         exportData: () => {
-          const { nodes, edges, documents, folders, visualGroups, viewport, viewMode } = get();
+          const { nodes, edges, documents, folders, visualGroups, steps, viewport, viewMode } = get();
           const exportObj = {
             version: 1,
             exportedAt: new Date().toISOString(),
-            data: { nodes, edges, documents, folders, visualGroups, viewport, viewMode },
+            data: { nodes, edges, documents, folders, visualGroups, steps, viewport, viewMode },
           };
           return JSON.stringify(exportObj, null, 2);
         },
@@ -634,6 +777,7 @@ export const useCanvasStore = create<CanvasState>()(
               documents: data.documents || [],
               folders: data.folders || [],
               visualGroups: data.visualGroups || [],
+              steps: data.steps || [],
               viewport: data.viewport || { x: 0, y: 0, zoom: 1 },
               viewMode: data.viewMode || 'technical',
               // Reset selection state
@@ -641,6 +785,9 @@ export const useCanvasStore = create<CanvasState>()(
               selectedNodeIds: [],
               selectedDocumentId: null,
               selectedFolderId: null,
+              activeStepId: null,
+              isStepperActive: false,
+              isEditingSteps: false,
             });
 
             return { success: true };
@@ -715,30 +862,11 @@ export const useCanvasStore = create<CanvasState>()(
       {
         name: 'arch-viz-canvas-state',
         storage: createJSONStorage(() => localStorage),
-        partialize: (state) => {
-          // Не сохраняем в auto-save когда канвас закрыт,
-          // чтобы данные одного проекта не перезаписывали другой
-          if (!state.isCanvasOpen) {
-            return {
-              nodes: [] as AppNode[],
-              edges: [] as AppEdge[],
-              documents: [] as Document[],
-              folders: [] as Folder[],
-              visualGroups: [] as VisualGroup[],
-              viewport: { x: 0, y: 0, zoom: 1 },
-              viewMode: state.viewMode,
-            };
-          }
-          return {
-            nodes: state.nodes,
-            edges: state.edges,
-            documents: state.documents,
-            folders: state.folders,
-            visualGroups: state.visualGroups,
-            viewport: state.viewport,
-            viewMode: state.viewMode,
-          };
-        },
+        partialize: (state) => ({
+          // НЕ сохраняем nodes/edges — они хранятся в named saves (arch-viz-canvases).
+          // Это предотвращает переполнение localStorage (QuotaExceededError).
+          viewMode: state.viewMode,
+        }),
         onRehydrateStorage: () => () => {
           useCanvasStore.setState({ _hasHydrated: true });
         },
@@ -781,42 +909,5 @@ if (typeof window !== 'undefined') {
   setTimeout(setHydrated, 100);
 }
 
-// Debounced save status tracking (runs after store is created)
-let saveStatusTimeout: NodeJS.Timeout | null = null;
-const DEBOUNCE_MS = 500;
-
-// Subscribe to persisted state changes and update save status
-if (typeof window !== 'undefined') {
-  useCanvasStore.subscribe(
-    (state, prevState) => {
-      // Only track changes to persisted fields
-      const persistedChanged =
-        state.nodes !== prevState.nodes ||
-        state.edges !== prevState.edges ||
-        state.documents !== prevState.documents ||
-        state.folders !== prevState.folders ||
-        state.visualGroups !== prevState.visualGroups;
-
-      if (persistedChanged && state._hasHydrated) {
-        // Set to saving immediately (auto-save status only)
-        // NOTE: Do NOT set isDirty here - isDirty tracks "named save" state,
-        // not auto-save. isDirty should only be set via markDirty() when
-        // user makes changes, not during auto-save persistence.
-        if (saveStatusTimeout) clearTimeout(saveStatusTimeout);
-
-        // Use queueMicrotask to avoid setState during render
-        queueMicrotask(() => {
-          useCanvasStore.setState({ saveStatus: 'saving' });
-        });
-
-        // After debounce, mark as saved
-        saveStatusTimeout = setTimeout(() => {
-          useCanvasStore.setState({
-            saveStatus: 'saved',
-            lastSavedAt: new Date().toISOString(),
-          });
-        }, DEBOUNCE_MS);
-      }
-    }
-  );
-}
+// Auto-save status больше не нужен — nodes/edges не персистятся через Zustand.
+// Статус сохранения управляется через isDirty/markDirty/markClean.

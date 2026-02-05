@@ -37,6 +37,8 @@ import { useCanvasStore } from '@/stores/canvasStore';
 import { useHydration } from '@/hooks/useHydration';
 import { applyLayout, type LayoutType, type LayoutDirection, shouldUsePresentationRouting } from '@/lib/layout';
 import type { AppNode, AppEdge, ShapeNodeData } from '@/types/canvas';
+import { useTranslation } from '@/i18n/context';
+import { useTheme } from 'next-themes';
 
 interface CanvasViewerProps {
   initialNodes: AppNode[];
@@ -119,10 +121,17 @@ function CanvasViewerInner({
     setCurrentLayoutType,
     currentLayoutType,
     markDirty,
+    steps,
+    activeStepId,
+    isStepperActive,
+    getVisibleNodeIdsForStep,
   } = useCanvasStore();
 
-  const { setCenter, getNode, screenToFlowPosition } = useReactFlow();
+  const reactFlow = useReactFlow();
+  const { setCenter, getNode, screenToFlowPosition, fitView: rfFitView } = reactFlow;
   const { undo, redo } = useTemporalStore();
+  const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
 
   // Use persisted data if available after hydration, otherwise use props
   const effectiveInitialNodes = hasHydrated && storeNodes.length > 0 ? storeNodes : initialNodes;
@@ -243,16 +252,67 @@ function CanvasViewerInner({
   // Set of nodes selected for new group
   const selectedForGroupSet = useMemo(() => new Set(selectedForGroup), [selectedForGroup]);
 
-  // Filter nodes by view mode and mark selected, apply dimming for visual groups
+  // Stepper: get visible node IDs for current step
+  const stepVisibleNodeIds = useMemo(() => {
+    return getVisibleNodeIdsForStep();
+  }, [getVisibleNodeIdsForStep, steps, activeStepId, isStepperActive]);
+
+  // Stepper: animate viewport on step change
+  const prevActiveStepId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isStepperActive || !activeStepId || activeStepId === prevActiveStepId.current) {
+      prevActiveStepId.current = activeStepId;
+      return;
+    }
+    prevActiveStepId.current = activeStepId;
+
+    const sorted = [...steps].sort((a, b) => a.order - b.order);
+    const activeStep = sorted.find(s => s.id === activeStepId);
+    if (!activeStep) return;
+
+    // Small delay to allow React Flow to process node changes
+    const timer = setTimeout(() => {
+      if (activeStep.viewport) {
+        setCenter(activeStep.viewport.x, activeStep.viewport.y, {
+          duration: 500,
+          zoom: activeStep.viewport.zoom,
+        });
+      } else if (activeStep.nodeIds.length > 0) {
+        // fitView on visible nodes
+        const visibleNodeIds = stepVisibleNodeIds;
+        if (visibleNodeIds) {
+          const visibleNodes = nodes.filter(n => visibleNodeIds.has(n.id));
+          if (visibleNodes.length > 0) {
+            rfFitView({
+              nodes: visibleNodes,
+              padding: 0.2,
+              duration: 500,
+            });
+          }
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [activeStepId, isStepperActive, steps, setCenter, rfFitView, nodes, stepVisibleNodeIds]);
+
+  // Filter nodes by view mode and mark selected, apply dimming for visual groups and stepper
   const filteredNodes = useMemo(() => {
+    // Layer 1: ViewMode — hard filter (removes nodes)
     let result = nodes;
     if (viewMode === 'executive') {
       result = nodes.filter((n) => ['business', 'group'].includes(n.type || ''));
     }
-    // Mark selected node and apply visual group dimming
+    // Layer 2 & 3: Stepper + Collection — soft dimming
     return result.map((node) => {
       const isInActiveGroup = activeGroupNodeIds ? activeGroupNodeIds.has(node.id) : true;
+      const isInActiveStep = stepVisibleNodeIds ? stepVisibleNodeIds.has(node.id) : true;
       const isSelectedForGroup = selectedForGroupSet.has(node.id);
+
+      // Combine opacity: min of step and collection
+      const stepOpacity = isInActiveStep ? 1 : 0.15;
+      const collectionOpacity = isInActiveGroup ? 1 : 0.25;
+      const combinedOpacity = Math.min(stepOpacity, collectionOpacity);
 
       return {
         ...node,
@@ -260,7 +320,7 @@ function CanvasViewerInner({
         className: isSelectingForGroup && isSelectedForGroup ? 'ring-4 ring-green-500 ring-offset-2' : '',
         style: {
           ...node.style,
-          opacity: isInActiveGroup ? 1 : 0.25,
+          opacity: combinedOpacity,
           transition: 'opacity 0.3s ease, box-shadow 0.2s ease',
           boxShadow: isSelectingForGroup && isSelectedForGroup
             ? '0 0 0 4px rgba(34, 197, 94, 0.5)'
@@ -268,7 +328,7 @@ function CanvasViewerInner({
         },
       };
     });
-  }, [nodes, viewMode, selectedNodeId, activeGroupNodeIds, isSelectingForGroup, selectedForGroupSet]);
+  }, [nodes, viewMode, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, isSelectingForGroup, selectedForGroupSet]);
 
   // Node type to color mapping (matches node border colors)
   const typeColors: Record<string, string> = {
@@ -303,6 +363,18 @@ function CanvasViewerInner({
           ? activeGroupNodeIds.has(edge.source) && activeGroupNodeIds.has(edge.target)
           : true;
 
+        // Check if edge connects nodes in active step
+        const isInActiveStep = stepVisibleNodeIds
+          ? stepVisibleNodeIds.has(edge.source) && stepVisibleNodeIds.has(edge.target)
+          : true;
+
+        // Combine opacity: min of step and collection
+        const stepOpacity = isInActiveStep ? 1 : 0.15;
+        const collectionOpacity = isInActiveGroup ? 1 : 0.15;
+        const combinedOpacity = activeGroupNodeIds || stepVisibleNodeIds
+          ? Math.min(stepOpacity, collectionOpacity)
+          : 1;
+
         // Determine if this edge should show gradient
         const showGradient = isSelected || (activeGroupNodeIds !== null && isInActiveGroup);
 
@@ -311,7 +383,7 @@ function CanvasViewerInner({
           type: 'custom',
           selected: isSelected,
           style: {
-            opacity: activeGroupNodeIds ? (isInActiveGroup ? 1 : 0.15) : 1,
+            opacity: combinedOpacity,
             transition: 'opacity 0.3s ease',
           },
           data: {
@@ -325,7 +397,7 @@ function CanvasViewerInner({
           },
         };
       });
-  }, [edges, filteredNodes, selectedNodeId, activeGroupNodeIds, usePresentationRouting]);
+  }, [edges, filteredNodes, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, usePresentationRouting]);
 
   const handleNodesChange: OnNodesChange<AppNode> = useCallback(
     (changes) => {
@@ -692,14 +764,14 @@ function CanvasViewerInner({
         maxZoom={2}
         attributionPosition="bottom-left"
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e5e7eb" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color={resolvedTheme === 'dark' ? '#374151' : '#e5e7eb'} />
         <Controls showInteractive={false} className="!bottom-4 !left-4" />
         <MiniMap
           nodeColor={nodeColor}
           nodeStrokeWidth={2}
           zoomable
           pannable
-          className="!bg-white/90 !border !border-gray-200 !rounded-lg !bottom-4 !right-4"
+          className="!bg-white/90 dark:!bg-gray-800/90 !border !border-gray-200 dark:!border-gray-700 !rounded-lg !bottom-4 !right-4"
           style={{ width: 120, height: 80 }}
         />
       </ReactFlow>
@@ -709,7 +781,7 @@ function CanvasViewerInner({
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
           <div className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-lg text-sm font-medium flex items-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            Click nodes to add to collection ({selectedForGroup.length} selected)
+            {t('canvas.selectForCollection', { count: selectedForGroup.length })}
           </div>
         </div>
       )}
@@ -719,7 +791,7 @@ function CanvasViewerInner({
         <button
           onClick={handleAddComment}
           className="p-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-lg transition-colors"
-          title="Add comment (or double-click on canvas)"
+          title={t('canvas.addComment')}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -737,7 +809,7 @@ function CanvasViewerInner({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            Group {selectedNodeIds.length} nodes
+            {t('canvas.groupNodes', { count: selectedNodeIds.length })}
           </button>
         </div>
       )}
@@ -745,14 +817,14 @@ function CanvasViewerInner({
       {/* Group Dialog */}
       {showGroupDialog && (
         <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-20">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-80">
-            <h3 className="text-lg font-semibold mb-4">Create Group</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl dark:shadow-gray-950 p-6 w-80">
+            <h3 className="text-lg font-semibold mb-4 dark:text-gray-100">{t('canvas.createGroup')}</h3>
             <input
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Group name..."
-              className="w-full px-3 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={t('canvas.groupName')}
+              className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreateGroup();
@@ -762,16 +834,16 @@ function CanvasViewerInner({
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowGroupDialog(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >
-                Cancel
+                {t('canvas.cancel')}
               </button>
               <button
                 onClick={handleCreateGroup}
                 disabled={!groupName.trim()}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
               >
-                Create
+                {t('canvas.create')}
               </button>
             </div>
           </div>
@@ -782,9 +854,9 @@ function CanvasViewerInner({
       <ShapeToolbar className="absolute left-4 top-1/2 -translate-y-1/2 z-10" />
 
       {/* Layout & History Controls - bottom center */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-xl px-2 py-1.5 shadow-lg border border-gray-200">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-xl px-2 py-1.5 shadow-lg dark:shadow-gray-950 border border-gray-200 dark:border-gray-700">
         <LayoutToolbar onApplyLayout={handleApplyLayout} />
-        <div className="w-px h-6 bg-gray-200" />
+        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
         <HistoryControls />
       </div>
 
@@ -793,8 +865,8 @@ function CanvasViewerInner({
         <div className="absolute top-4 right-4 z-10">
           <div className="px-3 py-2 bg-blue-600 text-white rounded-lg shadow-lg text-sm font-medium flex items-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            Click to place {pendingShapeType}
-            <span className="text-xs opacity-75">(Esc to cancel)</span>
+            {t('canvas.clickToPlace', { shape: pendingShapeType })}
+            <span className="text-xs opacity-75">{t('canvas.escToCancel')}</span>
           </div>
         </div>
       )}

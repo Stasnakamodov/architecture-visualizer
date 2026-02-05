@@ -44,7 +44,7 @@ export const GroupNode = memo(({ data, selected }: NodeProps<GroupNodeType>) => 
         handleClassName="!w-2 !h-2 !bg-gray-500 !border-white"
       />
       <div
-        className={`px-4 py-3 rounded-lg border-2 border-dashed bg-gray-50/50 h-full transition-all duration-200 ${selected ? 'shadow-xl ring-2 ring-gray-400 ring-offset-2 bg-gray-100/50' : ''}`}
+        className={`px-4 py-3 rounded-lg border-2 border-dashed bg-gray-50/50 dark:bg-gray-800/50 h-full transition-all duration-200 ${selected ? 'shadow-xl ring-2 ring-gray-400 ring-offset-2 dark:ring-offset-gray-900 bg-gray-100/50 dark:bg-gray-800/70' : ''}`}
         style={{ borderColor }}
         onDoubleClick={handleDoubleClick}
       >
@@ -66,12 +66,12 @@ export const GroupNode = memo(({ data, selected }: NodeProps<GroupNodeType>) => 
               rows={1}
             />
           ) : (
-            <span className="font-medium text-sm text-gray-700 break-words">{data.label}</span>
+            <span className="font-medium text-sm text-gray-700 dark:text-gray-300 break-words">{data.label}</span>
           )}
         </div>
 
         {data.description && !isEditing && (
-          <p className="text-xs text-gray-500 mt-2">{data.description}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{data.description}</p>
         )}
 
         <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-gray-500 !border-2 !border-white" />

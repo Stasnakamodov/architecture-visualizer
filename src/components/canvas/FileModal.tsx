@@ -51,11 +51,11 @@ export function FileModal({ node, onClose, onLinkClick }: FileModalProps) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
+          className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl dark:shadow-gray-950 w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-shrink-0 bg-gray-50/50">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4 flex-shrink-0 bg-gray-50/50 dark:bg-gray-800/50">
             <div className="flex items-center gap-3 min-w-0">
               <span
                 className={`
@@ -69,15 +69,15 @@ export function FileModal({ node, onClose, onLinkClick }: FileModalProps) {
               >
                 {node.type || 'note'}
               </span>
-              <h2 className="font-semibold text-gray-900 text-lg truncate">
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100 text-lg truncate">
                 {data.label}
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
             >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -85,9 +85,9 @@ export function FileModal({ node, onClose, onLinkClick }: FileModalProps) {
 
           {/* Tags */}
           {data.tags && data.tags.length > 0 && (
-            <div className="px-6 py-3 border-b border-gray-100 flex flex-wrap gap-2 bg-gray-50/30">
+            <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800 flex flex-wrap gap-2 bg-gray-50/30 dark:bg-gray-800/30">
               {data.tags.map((tag: string) => (
-                <span key={tag} className="text-xs px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full">
+                <span key={tag} className="text-xs px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full">
                   #{tag}
                 </span>
               ))}
@@ -96,7 +96,7 @@ export function FileModal({ node, onClose, onLinkClick }: FileModalProps) {
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600 prose-code:text-purple-600 prose-code:bg-purple-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-table:text-sm prose-img:rounded-lg prose-blockquote:border-l-blue-500 prose-blockquote:bg-blue-50/50 prose-blockquote:py-1 prose-li:marker:text-gray-400">
+            <div className="prose dark:prose-invert prose-sm max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-a:text-blue-600 prose-code:text-purple-600 prose-code:bg-purple-50 dark:prose-code:bg-purple-900/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-table:text-sm prose-img:rounded-lg prose-blockquote:border-l-blue-500 prose-blockquote:bg-blue-50/50 dark:prose-blockquote:bg-blue-900/30 prose-blockquote:py-1 prose-li:marker:text-gray-400 dark:prose-li:marker:text-gray-500">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -138,15 +138,15 @@ export function FileModal({ node, onClose, onLinkClick }: FileModalProps) {
                   ),
                   // Better tables
                   table: ({ children }) => (
-                    <div className="overflow-x-auto my-4 rounded-lg border border-gray-200">
+                    <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700">
                       <table className="min-w-full border-collapse">{children}</table>
                     </div>
                   ),
                   th: ({ children }) => (
-                    <th className="border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-left font-semibold text-sm">{children}</th>
+                    <th className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-left font-semibold text-sm">{children}</th>
                   ),
                   td: ({ children }) => (
-                    <td className="border-b border-gray-100 px-4 py-2.5 text-sm">{children}</td>
+                    <td className="border-b border-gray-100 dark:border-gray-800 px-4 py-2.5 text-sm">{children}</td>
                   ),
                   // Better code blocks
                   pre: ({ children }) => (
@@ -161,8 +161,8 @@ export function FileModal({ node, onClose, onLinkClick }: FileModalProps) {
 
           {/* Footer with links */}
           {data.links && data.links.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex-shrink-0">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                 Linked Documents ({data.links.length})
               </div>
               <div className="flex flex-wrap gap-2">
@@ -170,9 +170,9 @@ export function FileModal({ node, onClose, onLinkClick }: FileModalProps) {
                   <button
                     key={link}
                     onClick={() => handleLinkInContent(link)}
-                    className="text-sm px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-1.5 shadow-sm"
+                    className="text-sm px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-colors flex items-center gap-1.5 shadow-sm dark:shadow-gray-950"
                   >
-                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
                     {link}

@@ -21,8 +21,8 @@ export function HistoryControls({ className = '' }: HistoryControlsProps) {
         className={`
           p-2 rounded-lg transition-colors
           ${canUndo
-            ? 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-sm'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            ? 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
           }
         `}
         title="Undo (Ctrl+Z)"
@@ -39,8 +39,8 @@ export function HistoryControls({ className = '' }: HistoryControlsProps) {
         className={`
           p-2 rounded-lg transition-colors
           ${canRedo
-            ? 'bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 shadow-sm'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            ? 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
           }
         `}
         title="Redo (Ctrl+Shift+Z)"

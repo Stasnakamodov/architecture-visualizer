@@ -44,7 +44,7 @@ export const DatabaseNode = memo(({ data, selected }: NodeProps<DatabaseNodeType
         handleClassName="!w-2 !h-2 !bg-purple-500 !border-white"
       />
       <div
-        className={`px-3 py-2 rounded-lg border-2 bg-white h-full transition-all duration-200 ${selected ? 'shadow-xl ring-2 ring-purple-400 ring-offset-2' : 'shadow-sm'}`}
+        className={`px-3 py-2 rounded-lg border-2 bg-white dark:bg-gray-900 h-full transition-all duration-200 ${selected ? 'shadow-xl ring-2 ring-purple-400 ring-offset-2 dark:ring-offset-gray-900' : 'shadow-sm dark:shadow-gray-950'}`}
         style={{ borderColor }}
         onDoubleClick={handleDoubleClick}
       >
@@ -73,7 +73,7 @@ export const DatabaseNode = memo(({ data, selected }: NodeProps<DatabaseNodeType
               rows={1}
             />
           ) : (
-            <span className="font-medium text-sm text-gray-900 break-words">{data.label}</span>
+            <span className="font-medium text-sm text-gray-900 dark:text-gray-100 break-words">{data.label}</span>
           )}
         </div>
 
@@ -87,7 +87,7 @@ export const DatabaseNode = memo(({ data, selected }: NodeProps<DatabaseNodeType
         )}
 
         {data.description && !isEditing && (
-          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{data.description}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{data.description}</p>
         )}
 
         <Handle type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-purple-500 !border-white" />

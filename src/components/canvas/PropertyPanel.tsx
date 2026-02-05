@@ -230,11 +230,11 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
 
   // Action buttons header (Save button is now in TopBar, not here)
   const ActionButtons = hasActions && (
-    <div className={`border-b border-gray-200 flex items-center ${isIconMode ? 'flex-col p-2 gap-2' : 'p-2 gap-2 justify-end'}`}>
+    <div className={`border-b border-gray-200 dark:border-gray-700 flex items-center ${isIconMode ? 'flex-col p-2 gap-2' : 'p-2 gap-2 justify-end'}`}>
       {onShowSaved && (
         <button
           onClick={onShowSaved}
-          className={`bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors ${
+          className={`bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors ${
             isIconMode ? 'w-10 h-10 rounded-xl flex items-center justify-center' : 'p-1.5 rounded-lg'
           }`}
           title="Saved canvases"
@@ -247,7 +247,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
       {onClose && (
         <button
           onClick={onClose}
-          className={`bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition-colors ${
+          className={`bg-gray-100 dark:bg-gray-800 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-500 transition-colors ${
             isIconMode ? 'w-10 h-10 rounded-xl flex items-center justify-center' : 'p-1.5 rounded-lg'
           }`}
           title="Close"
@@ -276,7 +276,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
             ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'
             : isHovering
             ? 'bg-blue-400'
-            : 'bg-gray-300'
+            : 'bg-gray-300 dark:bg-gray-600'
         }`}
       />
       {/* Grip handle - always visible */}
@@ -285,7 +285,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
           ? 'bg-blue-500'
           : isHovering
           ? 'bg-blue-400'
-          : 'bg-gray-300'
+          : 'bg-gray-300 dark:bg-gray-600'
       }`}>
         <div className="w-0.5 h-3 rounded-full bg-white" />
         <div className="w-0.5 h-3 rounded-full bg-white" />
@@ -298,7 +298,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
       <div
         ref={panelRef}
         style={{ width }}
-        className={`relative bg-white border-l border-gray-200 flex flex-col ${className}`}
+        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col ${className}`}
       >
         {ResizeHandle}
         {ActionButtons}
@@ -319,7 +319,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
       <div
         ref={panelRef}
         style={{ width }}
-        className={`relative bg-white border-l border-gray-200 flex flex-col ${className}`}
+        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col ${className}`}
       >
         {ResizeHandle}
         {ActionButtons}
@@ -337,12 +337,12 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
                 </svg>
               )}
             </div>
-            <span className="text-[10px] text-gray-500 capitalize font-medium">{selectedNode.type?.slice(0, 4)}</span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 capitalize font-medium">{selectedNode.type?.slice(0, 4)}</span>
             {/* Expand button in icon mode */}
             {onExpandNode && (
               <button
                 onClick={() => onExpandNode(selectedNode)}
-                className="w-10 h-10 bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-xl flex items-center justify-center transition-colors"
+                className="w-10 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-xl flex items-center justify-center transition-colors"
                 title="Expand"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,15 +356,15 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
             {/* Header with expand button */}
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h3 className={`font-semibold text-gray-700 mb-0.5 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>
+                <h3 className={`font-semibold text-gray-700 dark:text-gray-300 mb-0.5 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>
                   {isComment ? 'Comment' : 'Selected'}
                 </h3>
-                <p className={`text-gray-500 capitalize ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{selectedNode.type}</p>
+                <p className={`text-gray-500 dark:text-gray-400 capitalize ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{selectedNode.type}</p>
               </div>
               {onExpandNode && !isCompactMode && (
                 <button
                   onClick={() => onExpandNode(selectedNode)}
-                  className="p-1.5 bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-lg transition-colors"
+                  className="p-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
                   title="Open in modal"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -378,25 +378,25 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
             {isComment ? (
               <div className="space-y-3">
                 <div>
-                  <label className={`block font-medium text-gray-600 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Title</label>
+                  <label className={`block font-medium text-gray-600 dark:text-gray-400 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Title</label>
                   <input
                     type="text"
                     value={commentLabel}
                     onChange={(e) => handleCommentLabelChange(e.target.value)}
                     placeholder="Comment title..."
-                    className={`w-full px-2 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-500 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}
+                    className={`w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-amber-500 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}
                   />
                 </div>
 
                 {!isCompactMode && (
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Content</label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Content</label>
                     <textarea
                       value={commentContent}
                       onChange={(e) => handleCommentContentChange(e.target.value)}
                       placeholder="Write your comment..."
                       rows={4}
-                      className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
+                      className="w-full px-2 py-1.5 border border-gray-200 dark:border-gray-700 rounded text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
                     />
                     <p className="mt-1 text-[10px] text-gray-400">Supports markdown</p>
                   </div>
@@ -417,7 +417,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
 
                 {/* Created date */}
                 {commentData?.createdAt && !isCompactMode && (
-                  <div className="pt-2 border-t border-gray-100">
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
                     <p className="text-[10px] text-gray-400">
                       Created: {new Date(commentData.createdAt).toLocaleDateString()}
                     </p>
@@ -428,8 +428,8 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
               /* Non-comment, non-shape nodes */
               <div className="space-y-2">
                 <div>
-                  <label className={`block font-medium text-gray-500 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Label</label>
-                  <div className={`px-2 py-1.5 bg-gray-50 rounded text-gray-700 truncate ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>
+                  <label className={`block font-medium text-gray-500 dark:text-gray-400 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Label</label>
+                  <div className={`px-2 py-1.5 bg-gray-50 dark:bg-gray-800 rounded text-gray-700 dark:text-gray-300 truncate ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>
                     {selectedNode.data.label || '(no label)'}
                   </div>
                 </div>
@@ -438,7 +438,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
                 {onExpandNode && !isCompactMode && (
                   <button
                     onClick={() => onExpandNode(selectedNode)}
-                    className="w-full px-3 py-2 bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+                    className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -449,7 +449,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
 
                 {!isCompactMode && (
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Position</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Position</label>
                     <div className="flex gap-1">
                       <div className="flex-1 px-2 py-1.5 bg-gray-50 rounded text-xs text-gray-700">
                         X: {Math.round(selectedNode.position.x)}
@@ -475,7 +475,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
       <div
         ref={panelRef}
         style={{ width }}
-        className={`relative bg-white border-l border-gray-200 overflow-y-auto flex flex-col ${className}`}
+        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col ${className}`}
       >
         {ResizeHandle}
         {ActionButtons}
@@ -519,20 +519,20 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
     <div
       ref={panelRef}
       style={{ width }}
-      className={`relative bg-white border-l border-gray-200 overflow-y-auto flex flex-col ${className}`}
+      className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col ${className}`}
     >
       {ResizeHandle}
       {ActionButtons}
       {/* Header */}
-      <div className={`border-b border-gray-100 ${isCompactMode ? 'p-2' : 'p-3'} flex items-center justify-between`}>
+      <div className={`border-b border-gray-100 dark:border-gray-800 ${isCompactMode ? 'p-2' : 'p-3'} flex items-center justify-between`}>
         <div>
-          <h3 className={`font-semibold text-gray-700 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Properties</h3>
-          <p className={`text-gray-500 capitalize ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{shapeData?.shapeType}</p>
+          <h3 className={`font-semibold text-gray-700 dark:text-gray-300 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Properties</h3>
+          <p className={`text-gray-500 dark:text-gray-400 capitalize ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{shapeData?.shapeType}</p>
         </div>
         {onExpandNode && !isCompactMode && (
           <button
             onClick={() => onExpandNode(selectedNode)}
-            className="p-1.5 bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-lg transition-colors"
+            className="p-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
             title="Open in modal"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -545,19 +545,19 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
       <div className={`space-y-3 ${isCompactMode ? 'p-2' : 'p-3 space-y-4'}`}>
         {/* Label */}
         <div>
-          <label className={`block font-medium text-gray-600 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Label</label>
+          <label className={`block font-medium text-gray-600 dark:text-gray-400 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Label</label>
           <input
             type="text"
             value={label}
             onChange={(e) => handleLabelChange(e.target.value)}
             placeholder="Label..."
-            className={`w-full px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}
+            className={`w-full px-2 py-1 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}
           />
         </div>
 
         {/* Fill Color */}
         <div>
-          <label className={`block font-medium text-gray-600 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Fill</label>
+          <label className={`block font-medium text-gray-600 dark:text-gray-400 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Fill</label>
           <div className="flex items-center gap-1">
             <input
               type="color"
@@ -570,7 +570,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
                 type="text"
                 value={fillColor}
                 onChange={(e) => handleFillColorChange(e.target.value)}
-                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             )}
           </div>
@@ -590,7 +590,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
 
         {/* Border Color */}
         <div>
-          <label className={`block font-medium text-gray-600 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Border</label>
+          <label className={`block font-medium text-gray-600 dark:text-gray-400 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Border</label>
           <div className="flex items-center gap-1">
             <input
               type="color"
@@ -603,7 +603,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
                 type="text"
                 value={borderColor}
                 onChange={(e) => handleBorderColorChange(e.target.value)}
-                className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             )}
           </div>
@@ -623,7 +623,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
 
         {/* Border Style */}
         <div>
-          <label className={`block font-medium text-gray-600 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Style</label>
+          <label className={`block font-medium text-gray-600 dark:text-gray-400 mb-1 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Style</label>
           <div className={`flex ${isCompactMode ? 'flex-col gap-0.5' : 'gap-0.5'}`}>
             {BORDER_STYLES.map((style) => (
               <button
@@ -631,8 +631,8 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
                 onClick={() => handleBorderStyleChange(style.value)}
                 className={`px-2 py-1 rounded border transition-colors ${
                   borderStyle === style.value
-                    ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 text-blue-700'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                 } ${isCompactMode ? 'text-[10px]' : 'text-xs flex-1'}`}
               >
                 {isCompactMode ? style.label.charAt(0) : style.label}
@@ -644,12 +644,12 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
         {/* Position (read-only) - hide in compact */}
         {!isCompactMode && (
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Position</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Position</label>
             <div className="flex gap-1">
-              <div className="flex-1 px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
+              <div className="flex-1 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400">
                 X: {Math.round(selectedNode.position.x)}
               </div>
-              <div className="flex-1 px-2 py-1 bg-gray-50 rounded text-xs text-gray-600">
+              <div className="flex-1 px-2 py-1 bg-gray-50 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400">
                 Y: {Math.round(selectedNode.position.y)}
               </div>
             </div>

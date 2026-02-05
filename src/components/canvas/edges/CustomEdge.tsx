@@ -195,7 +195,7 @@ export const CustomEdge = memo(
                 px-2 py-0.5 rounded text-xs font-medium transition-colors
                 ${showGradient
                   ? 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700'
-                  : 'bg-gray-100 text-gray-600'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }
               `}
             >

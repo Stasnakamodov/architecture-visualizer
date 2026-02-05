@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useTranslation } from '@/i18n/context';
 
 // Sidebar width constants
 const MIN_SIDEBAR_WIDTH = 56; // Icon-only mode
@@ -74,6 +75,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
     startGroupSelection,
     cancelGroupSelection,
   } = useCanvasStore();
+
+  const { t } = useTranslation();
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['documents', 'all']));
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -453,7 +456,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
           </svg>
         );
       default:
-        return <div className="w-2 h-2 rounded-full bg-gray-400" />;
+        return <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500" />;
     }
   };
 
@@ -464,61 +467,61 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
       case 'business': return 'text-indigo-500';
       case 'group': return 'text-gray-500';
       case 'comment': return 'text-amber-500';
-      default: return 'text-gray-400';
+      default: return 'text-gray-400 dark:text-gray-500';
     }
   };
 
   const groupLabels: Record<string, { label: string; icon: React.ReactNode }> = {
     tech: {
-      label: 'Technical',
+      label: t('fileTree.technical'),
       icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>,
     },
     database: {
-      label: 'Databases',
+      label: t('fileTree.databases'),
       icon: <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" /><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" /><path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" /></svg>,
     },
     business: {
-      label: 'Business',
+      label: t('fileTree.business'),
       icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>,
     },
     group: {
-      label: 'Groups',
+      label: t('fileTree.groupsLabel'),
       icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
     },
     comment: {
-      label: 'Comments',
+      label: t('fileTree.comments'),
       icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>,
     },
   };
 
   if (isCollapsed) {
     return (
-      <div className="w-12 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-3 gap-2">
+      <div className="w-12 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-3 gap-2">
         <button
           onClick={onToggleCollapse}
-          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-          title="Expand sidebar"
+          className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          title={t('fileTree.expandSidebar')}
         >
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
-        <div className="w-8 h-px bg-gray-200 my-1" />
-        <span className="text-xs text-gray-500 font-medium">{nodes.length}</span>
+        <div className="w-8 h-px bg-gray-200 dark:bg-gray-700 my-1" />
+        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{nodes.length}</span>
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} style={{ width: sidebarWidth }} className="relative bg-gray-50 border-r border-gray-200 flex flex-col h-full select-none">
+    <div ref={containerRef} style={{ width: sidebarWidth }} className="relative bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full select-none">
       {/* Header */}
-      <div className={`border-b border-gray-200 flex items-center ${isIconMode ? 'flex-col p-3 gap-2' : 'p-3 justify-between'}`}>
-        {!isIconMode && <span className={`font-semibold text-gray-800 ${isCompactMode ? 'text-xs' : 'text-sm'}`}>Files</span>}
+      <div className={`border-b border-gray-200 dark:border-gray-700 flex items-center ${isIconMode ? 'flex-col p-3 gap-2' : 'p-3 justify-between'}`}>
+        {!isIconMode && <span className={`font-semibold text-gray-800 dark:text-gray-200 ${isCompactMode ? 'text-xs' : 'text-sm'}`}>{t('fileTree.files')}</span>}
         <div className={`flex items-center ${isIconMode ? 'flex-col gap-2' : 'gap-1'}`}>
           <button
             onClick={handleCreateFolder}
-            className={`rounded-xl transition-all hover:scale-105 ${isIconMode ? 'w-10 h-10 bg-amber-50 hover:bg-amber-100 flex items-center justify-center' : 'p-1.5 hover:bg-yellow-100 rounded-lg'}`}
-            title="New folder"
+            className={`rounded-xl transition-all hover:scale-105 ${isIconMode ? 'w-10 h-10 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 flex items-center justify-center' : 'p-1.5 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg'}`}
+            title={t('fileTree.newFolder')}
           >
             <svg className={`text-amber-500 ${isIconMode ? 'w-5 h-5' : 'w-4 h-4'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -526,8 +529,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
           </button>
           <button
             onClick={() => handleCreateDocument(null)}
-            className={`rounded-xl transition-all hover:scale-105 ${isIconMode ? 'w-10 h-10 bg-blue-50 hover:bg-blue-100 flex items-center justify-center' : 'p-1.5 hover:bg-blue-100 rounded-lg'}`}
-            title="New document"
+            className={`rounded-xl transition-all hover:scale-105 ${isIconMode ? 'w-10 h-10 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 flex items-center justify-center' : 'p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg'}`}
+            title={t('fileTree.newDocument')}
           >
             <svg className={`text-blue-500 ${isIconMode ? 'w-5 h-5' : 'w-4 h-4'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -536,10 +539,10 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
           {!isIconMode && (
             <button
               onClick={onToggleCollapse}
-              className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
-              title="Collapse sidebar"
+              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title={t('fileTree.collapseSidebar')}
             >
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -549,25 +552,25 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
 
       {/* Search */}
       {isIconMode ? (
-        <div className="p-3 border-b border-gray-100 flex justify-center">
-          <button className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all hover:scale-105 flex items-center justify-center" title="Search">
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="p-3 border-b border-gray-100 dark:border-gray-800 flex justify-center">
+          <button className="w-10 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all hover:scale-105 flex items-center justify-center" title="Search">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
         </div>
       ) : (
-        <div className="p-2 border-b border-gray-100">
+        <div className="p-2 border-b border-gray-100 dark:border-gray-800">
           <div className="relative">
-            <svg className="w-4 h-4 text-gray-400 absolute left-2 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-2 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
-              placeholder={isCompactMode ? "..." : "Search..."}
+              placeholder={isCompactMode ? "..." : t('fileTree.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-7 pr-2 py-1.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isCompactMode ? 'text-xs' : 'text-sm'}`}
+              className={`w-full pl-7 pr-2 py-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 ${isCompactMode ? 'text-xs' : 'text-sm'}`}
             />
           </div>
         </div>
@@ -579,7 +582,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
           // Search results
           <div className="space-y-0.5">
             {filteredNodes.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">No results found</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('fileTree.noResults')}</p>
             ) : (
               filteredNodes.map((node) => {
                 const data = node.data as any;
@@ -590,8 +593,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                     onClick={() => handleNodeClick(node.id)}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors ${
                       selectedNodeId === node.id
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'hover:bg-gray-100 text-gray-700'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <span className={getTypeColor(node.type)}>{getNodeIcon(node.type, hasContent)}</span>
@@ -609,10 +612,10 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
               <div>
                 <button
                   onClick={() => toggleGroup('documents')}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <svg
-                    className={`w-3 h-3 text-gray-400 transition-transform ${expandedGroups.has('documents') ? 'rotate-90' : ''}`}
+                    className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform ${expandedGroups.has('documents') ? 'rotate-90' : ''}`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -621,8 +624,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                   <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="text-sm font-medium text-gray-700 flex-1 text-left">Documents</span>
-                  <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded">{documents.length}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 text-left">{t('fileTree.documents')}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">{documents.length}</span>
                 </button>
 
                 <AnimatePresence>
@@ -646,8 +649,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                             <div
                               className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors ${
                                 selectedFolderId === folder.id
-                                  ? 'bg-yellow-100 text-yellow-900'
-                                  : 'hover:bg-gray-100 text-gray-700'
+                                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-200'
+                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                               } ${draggedDocId ? 'border-2 border-dashed border-yellow-300' : ''}`}
                               onDragOver={handleDragOver}
                               onDrop={(e) => { e.stopPropagation(); handleDropOnFolder(folder.id); }}
@@ -657,7 +660,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                 className="p-0.5"
                               >
                                 <svg
-                                  className={`w-3 h-3 text-gray-400 transition-transform ${expandedFolders.has(folder.id) ? 'rotate-90' : ''}`}
+                                  className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform ${expandedFolders.has(folder.id) ? 'rotate-90' : ''}`}
                                   fill="currentColor"
                                   viewBox="0 0 20 20"
                                 >
@@ -680,7 +683,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                       setEditingTitle('');
                                     }
                                   }}
-                                  className="flex-1 text-sm bg-white border border-yellow-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                                  className="flex-1 text-sm bg-white dark:bg-gray-900 border border-yellow-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-yellow-500 text-gray-900 dark:text-gray-100"
                                   autoFocus
                                 />
                               ) : (
@@ -698,7 +701,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                   <button
                                     onClick={() => handleCreateDocument(folder.id)}
                                     className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-blue-100 rounded transition-opacity"
-                                    title="Add document to folder"
+                                    title={t('fileTree.addToFolder')}
                                   >
                                     <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -707,7 +710,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                   <button
                                     onClick={() => deleteFolder(folder.id)}
                                     className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-opacity"
-                                    title="Delete folder"
+                                    title={t('fileTree.deleteFolder')}
                                   >
                                     <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -735,11 +738,11 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                         onDragEnd={() => setDraggedDocId(null)}
                                         className={`group flex items-center gap-2 px-2 py-1 rounded-lg transition-colors cursor-move ${
                                           selectedDocumentId === doc.id
-                                            ? 'bg-blue-100 text-blue-900'
-                                            : 'hover:bg-gray-100 text-gray-700'
+                                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200'
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                                         }`}
                                       >
-                                        <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-3 h-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                         <button
@@ -755,7 +758,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                             onAddToCanvas?.(doc.id);
                                           }}
                                           className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-amber-100 rounded transition-opacity"
-                                          title="Add to canvas"
+                                          title={t('fileTree.addToCanvas')}
                                         >
                                           <svg className="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -764,7 +767,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                       </div>
                                     ))}
                                     {getDocsInFolder(folder.id).length === 0 && (
-                                      <div className="text-xs text-gray-400 px-2 py-1 italic">Empty folder</div>
+                                      <div className="text-xs text-gray-400 dark:text-gray-500 px-2 py-1 italic">{t('fileTree.emptyFolder')}</div>
                                     )}
                                   </div>
                                 </motion.div>
@@ -782,8 +785,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                             onDragEnd={() => setDraggedDocId(null)}
                             className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors cursor-move ${
                               selectedDocumentId === doc.id
-                                ? 'bg-blue-100 text-blue-900'
-                                : 'hover:bg-gray-100 text-gray-700'
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                             }`}
                           >
                             {editingDocId === doc.id ? (
@@ -799,12 +802,12 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                     setEditingTitle('');
                                   }
                                 }}
-                                className="flex-1 text-sm bg-white border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="flex-1 text-sm bg-white dark:bg-gray-900 border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
                                 autoFocus
                               />
                             ) : (
                               <>
-                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
                                 <button
@@ -820,7 +823,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                     onAddToCanvas?.(doc.id);
                                   }}
                                   className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-amber-100 rounded transition-opacity"
-                                  title="Add to canvas"
+                                  title={t('fileTree.addToCanvas')}
                                 >
                                   <svg className="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -829,7 +832,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                 <button
                                   onClick={() => deleteDocument(doc.id)}
                                   className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-opacity"
-                                  title="Delete document"
+                                  title={t('fileTree.deleteDocument')}
                                 >
                                   <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -848,7 +851,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
 
             {/* Separator if both documents and nodes exist */}
             {(documents.length > 0 || folders.length > 0) && nodes.length > 0 && (
-              <div className="border-t border-gray-200 my-2" />
+              <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
             )}
 
             {/* Canvas Nodes */}
@@ -862,7 +865,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                 tech: { bg: 'bg-blue-50', hoverBg: 'hover:bg-blue-100', text: 'text-blue-600', badge: 'bg-blue-500' },
                 database: { bg: 'bg-purple-50', hoverBg: 'hover:bg-purple-100', text: 'text-purple-600', badge: 'bg-purple-500' },
                 business: { bg: 'bg-indigo-50', hoverBg: 'hover:bg-indigo-100', text: 'text-indigo-600', badge: 'bg-indigo-500' },
-                group: { bg: 'bg-gray-100', hoverBg: 'hover:bg-gray-200', text: 'text-gray-600', badge: 'bg-gray-500' },
+                group: { bg: 'bg-gray-100 dark:bg-gray-800', hoverBg: 'hover:bg-gray-200 dark:hover:bg-gray-700', text: 'text-gray-600 dark:text-gray-400', badge: 'bg-gray-500' },
                 comment: { bg: 'bg-amber-50', hoverBg: 'hover:bg-amber-100', text: 'text-amber-600', badge: 'bg-amber-500' },
               };
               const style = typeStyles[type] || typeStyles.group;
@@ -874,13 +877,13 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                     className={`w-full flex items-center rounded-xl transition-all ${
                       isIconMode
                         ? `justify-center p-2 ${style.bg} ${style.hoverBg} hover:scale-105`
-                        : 'gap-2 px-2 py-1.5 hover:bg-gray-100'
+                        : 'gap-2 px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                     title={isIconMode ? `${label} (${typeNodes.length})` : undefined}
                   >
                     {!isIconMode && (
                       <svg
-                        className={`w-3 h-3 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+                        className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -899,10 +902,10 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                     ) : (
                       <>
                         <span className={`${getTypeColor(type)} flex-shrink-0`}>{icon}</span>
-                        <span className={`font-medium text-gray-700 flex-1 text-left truncate ${isCompactMode ? 'text-xs' : 'text-sm'}`}>
+                        <span className={`font-medium text-gray-700 dark:text-gray-300 flex-1 text-left truncate ${isCompactMode ? 'text-xs' : 'text-sm'}`}>
                           {isCompactMode ? label.slice(0, 4) : label}
                         </span>
-                        <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded flex-shrink-0">{typeNodes.length}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded flex-shrink-0">{typeNodes.length}</span>
                       </>
                     )}
                   </button>
@@ -926,8 +929,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                 onClick={() => handleNodeClick(node.id)}
                                 className={`w-full flex items-center gap-1.5 px-2 py-1 rounded-lg text-left transition-colors ${
                                   selectedNodeId === node.id
-                                    ? 'bg-blue-100 text-blue-900'
-                                    : 'hover:bg-gray-100 text-gray-700'
+                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200'
+                                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                                 }`}
                                 title={isCompactMode ? node.data.label : undefined}
                               >
@@ -949,26 +952,26 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
 
       {/* Resizable Divider */}
       <div
-        className={`relative h-1.5 bg-gray-200 cursor-ns-resize group flex-shrink-0 ${
+        className={`relative h-1.5 bg-gray-200 dark:bg-gray-700 cursor-ns-resize group flex-shrink-0 ${
           isDraggingDivider ? 'bg-blue-400' : 'hover:bg-blue-300'
         }`}
         onMouseDown={handleDividerMouseDown}
       >
         {/* Visual handle indicator */}
         <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-1 rounded-full transition-colors ${
-          isDraggingDivider ? 'bg-blue-600' : 'bg-gray-400 group-hover:bg-blue-500'
+          isDraggingDivider ? 'bg-blue-600' : 'bg-gray-400 dark:bg-gray-500 group-hover:bg-blue-500'
         }`} />
       </div>
 
       {/* Visual Groups Section */}
-      <div className="border-t border-gray-200 bg-white flex flex-col" style={{ height: isIconMode ? 'auto' : collectionsHeight }}>
+      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col" style={{ height: isIconMode ? 'auto' : collectionsHeight }}>
         {/* Header */}
-        <div className={`flex items-center border-b border-gray-100 flex-shrink-0 ${isIconMode ? 'flex-col p-3 gap-2' : 'p-2 justify-between'}`}>
-          {!isIconMode && <span className={`font-semibold text-gray-600 uppercase tracking-wide ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Collections</span>}
+        <div className={`flex items-center border-b border-gray-100 dark:border-gray-800 flex-shrink-0 ${isIconMode ? 'flex-col p-3 gap-2' : 'p-2 justify-between'}`}>
+          {!isIconMode && <span className={`font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{t('fileTree.collections')}</span>}
           <button
             onClick={handleOpenGroupModal}
-            className={`transition-all hover:scale-105 ${isIconMode ? 'w-10 h-10 bg-emerald-50 hover:bg-emerald-100 rounded-xl flex items-center justify-center' : 'p-1 hover:bg-blue-100 rounded'}`}
-            title="Create new collection"
+            className={`transition-all hover:scale-105 ${isIconMode ? 'w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl flex items-center justify-center' : 'p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded'}`}
+            title={t('fileTree.createCollection')}
           >
             <svg className={`text-emerald-500 ${isIconMode ? 'w-5 h-5' : 'w-4 h-4 text-blue-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -979,8 +982,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
         {/* Groups list */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {visualGroups.length === 0 ? (
-            <div className={`text-gray-400 text-center italic ${isIconMode ? 'p-3 text-xs' : 'p-3 text-xs'}`}>
-              {isIconMode ? '' : 'No collections yet'}
+            <div className={`text-gray-400 dark:text-gray-500 text-center italic ${isIconMode ? 'p-3 text-xs' : 'p-3 text-xs'}`}>
+              {isIconMode ? '' : t('fileTree.noCollections')}
             </div>
           ) : (
             <div className={`${isIconMode ? 'p-2 flex flex-col items-center gap-2' : 'p-1 space-y-0.5'}`}>
@@ -990,7 +993,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                   className={`group flex items-center cursor-pointer transition-all ${
                     isIconMode
                       ? `w-10 h-10 rounded-xl justify-center hover:scale-105 ${activeVisualGroupId === group.id ? 'ring-2 ring-offset-2' : ''}`
-                      : `rounded-lg gap-2 px-2 py-1.5 ${activeVisualGroupId === group.id ? 'bg-gray-100 ring-2 ring-offset-1' : 'hover:bg-gray-50'}`
+                      : `rounded-lg gap-2 px-2 py-1.5 ${activeVisualGroupId === group.id ? 'bg-gray-100 dark:bg-gray-800 ring-2 ring-offset-1 dark:ring-offset-gray-900' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`
                   }`}
                   style={{
                     ['--tw-ring-color' as string]: group.color,
@@ -1040,7 +1043,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className={`flex-1 bg-white border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 ${isCompactMode ? 'text-xs' : 'text-sm'}`}
+                        className={`flex-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100 ${isCompactMode ? 'text-xs' : 'text-sm'}`}
                         autoFocus
                       />
                     ) : (
@@ -1055,14 +1058,14 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                         >
                           {group.name}
                         </span>
-                        <span className="text-xs text-gray-400">{group.nodeIds.length}</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{group.nodeIds.length}</span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteVisualGroup(group.id);
                           }}
                           className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 rounded transition-opacity"
-                          title="Delete collection"
+                          title={t('fileTree.deleteCollection')}
                         >
                           <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1079,32 +1082,32 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
 
         {/* Active group indicator */}
         {activeVisualGroupId && (
-          <div className="p-2 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+          <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
             <button
               onClick={() => setActiveVisualGroup(null)}
-              className="w-full text-xs text-gray-600 hover:text-gray-800 flex items-center justify-center gap-1"
+              className="w-full text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 flex items-center justify-center gap-1"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              Show all nodes
+              {t('fileTree.showAll')}
             </button>
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className={`border-t border-gray-200 bg-gray-50 ${isIconMode ? 'p-2' : 'p-2'}`}>
+      <div className={`border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${isIconMode ? 'p-2' : 'p-2'}`}>
         {isIconMode ? (
           <div className="flex justify-center">
-            <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
-              <span className="text-xs font-medium text-gray-600">{nodes.length}</span>
+            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{nodes.length}</span>
             </div>
           </div>
         ) : (
-          <div className="text-xs text-gray-500">
-            {nodes.length} nodes · {documents.length} docs
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {t('fileTree.nodesDocs', { nodes: nodes.length, docs: documents.length })}
           </div>
         )}
       </div>
@@ -1124,38 +1127,38 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="bg-white rounded-xl shadow-2xl w-[400px] max-h-[80vh] flex flex-col"
+              className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl dark:shadow-gray-950 w-[400px] max-h-[80vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Create Collection</h3>
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('fileTree.createCollectionTitle')}</h3>
                 <button
                   onClick={handleCloseGroupModal}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
               {/* Collection Name Input */}
-              <div className="p-4 border-b border-gray-100">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Collection Name</label>
+              <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('fileTree.collectionName')}</label>
                 <input
                   type="text"
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder="Enter collection name..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={t('fileTree.enterCollectionName')}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   autoFocus
                 />
               </div>
 
               {/* Tree Selection */}
               <div className="flex-1 overflow-y-auto p-4 min-h-0">
-                <div className="text-sm font-medium text-gray-700 mb-2">Select Items</div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('fileTree.selectItems')}</div>
 
                 {/* Documents & Folders */}
                 {(documents.length > 0 || folders.length > 0) && (
@@ -1164,7 +1167,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                       <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-sm font-medium text-gray-600">Documents</span>
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('fileTree.documents')}</span>
                     </div>
 
                     {/* Folders */}
@@ -1184,7 +1187,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                               className="p-0.5"
                             >
                               <svg
-                                className={`w-3 h-3 text-gray-400 transition-transform ${modalExpandedFolders.has(folder.id) ? 'rotate-90' : ''}`}
+                                className={`w-3 h-3 text-gray-400 dark:text-gray-500 transition-transform ${modalExpandedFolders.has(folder.id) ? 'rotate-90' : ''}`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
@@ -1201,8 +1204,8 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                             <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                             </svg>
-                            <span className="text-sm text-gray-700">{folder.name}</span>
-                            <span className="text-xs text-gray-400">({docsInFolder.length})</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{folder.name}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">({docsInFolder.length})</span>
                           </div>
 
                           {modalExpandedFolders.has(folder.id) && (
@@ -1211,17 +1214,17 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                                 const nodeForDoc = nodes.find(n => (n.data as any).documentId === doc.id);
                                 if (!nodeForDoc) return null;
                                 return (
-                                  <label key={doc.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-gray-50 cursor-pointer">
+                                  <label key={doc.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
                                     <input
                                       type="checkbox"
                                       checked={modalSelectedNodes.has(nodeForDoc.id)}
                                       onChange={() => handleToggleModalNode(nodeForDoc.id)}
                                       className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                                     />
-                                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-3 h-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
-                                    <span className="text-sm text-gray-700 truncate">{doc.title}</span>
+                                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{doc.title}</span>
                                   </label>
                                 );
                               })}
@@ -1236,17 +1239,17 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                       const nodeForDoc = nodes.find(n => (n.data as any).documentId === doc.id);
                       if (!nodeForDoc) return null;
                       return (
-                        <label key={doc.id} className="flex items-center gap-2 py-1 px-2 ml-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <label key={doc.id} className="flex items-center gap-2 py-1 px-2 ml-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={modalSelectedNodes.has(nodeForDoc.id)}
                             onChange={() => handleToggleModalNode(nodeForDoc.id)}
                             className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                           />
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
-                          <span className="text-sm text-gray-700 truncate">{doc.title}</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{doc.title}</span>
                         </label>
                       );
                     })}
@@ -1262,11 +1265,11 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                     <div key={type} className="mb-3">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={getTypeColor(type)}>{icon}</span>
-                        <span className="text-sm font-medium text-gray-600">{label}</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</span>
                       </div>
                       <div className="ml-2 space-y-0.5">
                         {typeNodes.map((node) => (
-                          <label key={node.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-gray-50 cursor-pointer">
+                          <label key={node.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={modalSelectedNodes.has(node.id)}
@@ -1274,7 +1277,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                               className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
                             />
                             <span className={getTypeColor(node.type)}>{getNodeIcon(node.type, !!(node.data as any)?.fullContent)}</span>
-                            <span className="text-sm text-gray-700 truncate">{node.data.label}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{node.data.label}</span>
                           </label>
                         ))}
                       </div>
@@ -1283,21 +1286,21 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                 })}
 
                 {nodes.length === 0 && documents.length === 0 && (
-                  <div className="text-center py-8 text-gray-400 text-sm">
+                  <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
                     No items available
                   </div>
                 )}
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 rounded-b-xl">
-                <span className="text-sm text-gray-500">
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-b-xl">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
                   {modalSelectedNodes.size} item{modalSelectedNodes.size !== 1 ? 's' : ''} selected
                 </span>
                 <div className="flex gap-2">
                   <button
                     onClick={handleCloseGroupModal}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     Cancel
                   </button>
@@ -1330,7 +1333,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
               ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'
               : isHoveringSidebarHandle
               ? 'bg-blue-400'
-              : 'bg-gray-300'
+              : 'bg-gray-300 dark:bg-gray-600'
           }`}
         />
         {/* Grip handle - always visible */}
@@ -1339,7 +1342,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
             ? 'bg-blue-500'
             : isHoveringSidebarHandle
             ? 'bg-blue-400'
-            : 'bg-gray-300'
+            : 'bg-gray-300 dark:bg-gray-600'
         }`}>
           <div className="w-0.5 h-3 rounded-full bg-white" />
           <div className="w-0.5 h-3 rounded-full bg-white" />

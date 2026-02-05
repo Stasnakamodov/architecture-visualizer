@@ -50,7 +50,7 @@ export const BusinessNode = memo(({ data, selected }: NodeProps<BusinessNodeType
         handleClassName="!w-2 !h-2 !bg-indigo-500 !border-white"
       />
       <div
-        className={`px-4 py-3 rounded-xl border-2 bg-gradient-to-br from-indigo-50 to-white h-full transition-all duration-200 ${selected ? 'shadow-xl ring-2 ring-indigo-400 ring-offset-2' : 'shadow-sm'}`}
+        className={`px-4 py-3 rounded-xl border-2 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950 dark:to-gray-900 h-full transition-all duration-200 ${selected ? 'shadow-xl ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-gray-900' : 'shadow-sm dark:shadow-gray-950'}`}
         style={{ borderColor }}
         onDoubleClick={handleDoubleClick}
       >
@@ -74,7 +74,7 @@ export const BusinessNode = memo(({ data, selected }: NodeProps<BusinessNodeType
               rows={1}
             />
           ) : (
-            <div className="font-semibold text-indigo-900 break-words">{data.label}</div>
+            <div className="font-semibold text-indigo-900 dark:text-indigo-200 break-words">{data.label}</div>
           )}
         </div>
 
@@ -89,7 +89,7 @@ export const BusinessNode = memo(({ data, selected }: NodeProps<BusinessNodeType
         )}
 
         {data.description && !isEditing && (
-          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{data.description}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{data.description}</p>
         )}
 
         <Handle type="source" position={Position.Bottom} className="!w-3 !h-3 !bg-indigo-500 !border-2 !border-white" />

@@ -117,8 +117,8 @@ export function LayoutToolbar({ onApplyLayout, className = '' }: LayoutToolbarPr
           className={`
             p-2 rounded-lg transition-all group relative
             ${layout.type === 'hierarchical' && showDirections
-              ? 'bg-blue-100 text-blue-700'
-              : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
             }
           `}
           title={layout.label}
@@ -134,7 +134,7 @@ export function LayoutToolbar({ onApplyLayout, className = '' }: LayoutToolbarPr
       {/* Reset button */}
       {canReset && (
         <>
-          <div className="w-px h-5 bg-gray-200 mx-0.5" />
+          <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
           <button
             onClick={resetToPreLayout}
             className="p-2 rounded-lg transition-all hover:bg-amber-100 text-amber-600 hover:text-amber-700 group relative"
@@ -158,14 +158,14 @@ export function LayoutToolbar({ onApplyLayout, className = '' }: LayoutToolbarPr
             className="fixed inset-0 z-40"
             onClick={() => setShowDirections(false)}
           />
-          <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 p-1.5 z-50">
-            <div className="text-xs text-gray-500 px-2 py-1 mb-1">Direction</div>
+          <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-gray-900 rounded-lg shadow-xl dark:shadow-gray-950 border border-gray-200 dark:border-gray-700 p-1.5 z-50">
+            <div className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">Direction</div>
             <div className="flex gap-1">
               {directions.map((dir) => (
                 <button
                   key={dir.value}
                   onClick={() => handleDirectionClick(dir.value)}
-                  className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-colors text-lg"
+                  className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 hover:text-blue-600 transition-colors text-lg"
                   title={dir.label}
                 >
                   {dir.icon}

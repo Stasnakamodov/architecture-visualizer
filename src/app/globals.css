@@ -1,28 +1,38 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --surface: #ffffff;
+  --surface-secondary: #f9fafb;
+  --border: #e5e7eb;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --surface: #111827;
+  --surface-secondary: #1f2937;
+  --border: #374151;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Node selection pulse animation */
@@ -50,4 +60,40 @@ body {
 /* Make selected nodes more prominent */
 .react-flow__node.selected {
   z-index: 10 !important;
+}
+
+/* React Flow dark mode overrides */
+.dark .react-flow__controls {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .react-flow__controls button {
+  background: #1f2937;
+  border-color: #374151;
+  fill: #d1d5db;
+}
+
+.dark .react-flow__controls button:hover {
+  background: #374151;
+}
+
+.dark .react-flow__minimap {
+  background: #111827;
+}
+
+.dark .react-flow__background {
+  background: #0a0a0a;
+}
+
+.dark .react-flow__edge-path {
+  stroke: #6b7280;
+}
+
+.dark .react-flow__attribution {
+  background: rgba(17, 24, 39, 0.7);
+}
+
+.dark .react-flow__attribution a {
+  color: #9ca3af;
 }

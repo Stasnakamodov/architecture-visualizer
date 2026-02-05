@@ -7,6 +7,7 @@ import {
   type FolderCanvasData,
 } from '@/lib/converters/folderToCanvas';
 import type { AppNode, AppEdge } from '@/types/canvas';
+import { useTranslation } from '@/i18n/context';
 
 interface FolderDropzoneProps {
   onImport: (data: {
@@ -18,6 +19,7 @@ interface FolderDropzoneProps {
 }
 
 export function FolderDropzone({ onImport }: FolderDropzoneProps) {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -27,7 +29,7 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
   const processFiles = useCallback(
     async (files: { name: string; content: string }[]) => {
       if (files.length === 0) {
-        setError('No markdown files found in the folder');
+        setError(t('folderDropzone.noMarkdown'));
         return;
       }
 
@@ -35,7 +37,7 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
       const canvasData = convertFolderToCanvas(files);
 
       if (canvasData.nodes.length === 0) {
-        setError('No valid markdown files found');
+        setError(t('folderDropzone.noValid'));
         return;
       }
 
@@ -135,8 +137,8 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
         transition-all duration-200
         ${
           isDragActive
-            ? 'border-purple-500 bg-purple-50 scale-[1.02]'
-            : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50/50'
+            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 scale-[1.02]'
+            : 'border-gray-300 dark:border-gray-600 hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/20'
         }
         ${isProcessing ? 'opacity-50 cursor-wait' : ''}
       `}
@@ -156,7 +158,7 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
       <div className="flex items-center justify-center mb-4">
         <svg
           className={`w-12 h-12 transition-colors ${
-            isDragActive ? 'text-purple-500' : 'text-gray-400'
+            isDragActive ? 'text-purple-500' : 'text-gray-400 dark:text-gray-500'
           }`}
           fill="none"
           stroke="currentColor"
@@ -173,27 +175,27 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
 
       {isProcessing ? (
         <div>
-          <p className="text-purple-600 font-medium">Processing files...</p>
+          <p className="text-purple-600 font-medium">{t('folderDropzone.processing')}</p>
           {fileCount > 0 && (
-            <p className="text-gray-500 text-sm mt-1">
-              Found {fileCount} markdown files
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              {t('folderDropzone.found', { count: fileCount })}
             </p>
           )}
         </div>
       ) : isDragActive ? (
         <p className="text-purple-600 font-medium">
-          Drop the folder here
+          {t('folderDropzone.dropHere')}
         </p>
       ) : (
         <>
-          <p className="text-gray-700 font-medium mb-1">
-            Drop a folder with .md files
+          <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
+            {t('folderDropzone.dragDrop')}
           </p>
-          <p className="text-gray-500 text-sm">
-            or click to select a folder
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            {t('folderDropzone.orClick')}
           </p>
-          <p className="text-gray-400 text-xs mt-3">
-            Links between files ([[wikilinks]]) will become connections
+          <p className="text-gray-400 dark:text-gray-500 text-xs mt-3">
+            {t('folderDropzone.wikilinks')}
           </p>
         </>
       )}

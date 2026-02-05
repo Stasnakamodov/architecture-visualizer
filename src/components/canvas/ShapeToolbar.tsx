@@ -80,7 +80,7 @@ export const ShapeToolbar = memo(({ className = '' }: ShapeToolbarProps) => {
     return (
       <button
         onClick={() => setIsCollapsed(false)}
-        className={`p-1.5 bg-white rounded-lg shadow-md border border-gray-200 hover:bg-gray-50 transition-colors ${className}`}
+        className={`p-1.5 bg-white dark:bg-gray-900 rounded-lg shadow-md dark:shadow-gray-950 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${className}`}
         title="Show tools"
       >
         <svg className="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -92,12 +92,12 @@ export const ShapeToolbar = memo(({ className = '' }: ShapeToolbarProps) => {
 
   return (
     <div
-      className={`flex flex-col gap-0.5 p-1.5 bg-white rounded-lg shadow-md border border-gray-200 ${className}`}
+      className={`flex flex-col gap-0.5 p-1.5 bg-white dark:bg-gray-900 rounded-lg shadow-md dark:shadow-gray-950 border border-gray-200 dark:border-gray-700 ${className}`}
     >
       {/* Collapse button */}
       <button
         onClick={() => setIsCollapsed(true)}
-        className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors self-end"
+        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors self-end"
         title="Hide tools"
       >
         <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -113,8 +113,8 @@ export const ShapeToolbar = memo(({ className = '' }: ShapeToolbarProps) => {
         }}
         className={`p-1.5 rounded transition-colors relative group ${
           activeTool === 'select'
-            ? 'bg-blue-100 text-blue-700'
-            : 'hover:bg-gray-100 text-gray-600'
+            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
         }`}
         title="Select (V)"
       >
@@ -127,7 +127,7 @@ export const ShapeToolbar = memo(({ className = '' }: ShapeToolbarProps) => {
         </span>
       </button>
 
-      <div className="h-px bg-gray-200 my-0.5" />
+      <div className="h-px bg-gray-200 dark:bg-gray-700 my-0.5" />
 
       {/* Shape buttons */}
       {shapeButtons.map((shape) => (
@@ -136,8 +136,8 @@ export const ShapeToolbar = memo(({ className = '' }: ShapeToolbarProps) => {
           onClick={() => handleShapeClick(shape.type)}
           className={`p-1.5 rounded transition-colors relative group ${
             isShapeActive(shape.type)
-              ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-400'
-              : 'hover:bg-gray-100 text-gray-600'
+              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 ring-1 ring-blue-400'
+              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
           }`}
           title={`${shape.label} (${shape.shortcut})`}
         >

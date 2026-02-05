@@ -120,11 +120,11 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl dark:shadow-gray-950 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 ${nodeTypeColors[node.type || 'default']} rounded-lg flex items-center justify-center`}>
               {isComment ? (
@@ -142,15 +142,15 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
               )}
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {nodeTypeLabels[node.type || 'default']}
               </h2>
-              <p className="text-xs text-gray-500">ID: {node.id}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">ID: {node.id}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -162,7 +162,7 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Label / Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {isComment ? 'Title' : 'Label'}
             </label>
             <input
@@ -170,34 +170,34 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder={isComment ? 'Comment title...' : 'Label...'}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800"
             />
           </div>
 
           {/* Content for Comments */}
           {isComment && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Content</label>
               <textarea
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your comment content here..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 resize-none min-h-[200px]"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 resize-none min-h-[200px]"
               />
-              <p className="mt-1 text-xs text-gray-400">Supports markdown formatting</p>
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Supports markdown formatting</p>
             </div>
           )}
 
           {/* Description for non-comments */}
           {!isComment && !isShape && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add description..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 resize-none min-h-[100px]"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 resize-none min-h-[100px]"
                 rows={4}
               />
             </div>
@@ -207,19 +207,19 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
           {isShape && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Fill Color</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fill Color</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
                     value={fillColor}
                     onChange={(e) => setFillColor(e.target.value)}
-                    className="w-12 h-12 rounded-xl border-2 border-gray-200 cursor-pointer"
+                    className="w-12 h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 cursor-pointer"
                   />
                   <input
                     type="text"
                     value={fillColor}
                     onChange={(e) => setFillColor(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -237,25 +237,25 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Border Color</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Border Color</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
                     value={borderColor}
                     onChange={(e) => setBorderColor(e.target.value)}
-                    className="w-12 h-12 rounded-xl border-2 border-gray-200 cursor-pointer"
+                    className="w-12 h-12 rounded-xl border-2 border-gray-200 dark:border-gray-700 cursor-pointer"
                   />
                   <input
                     type="text"
                     value={borderColor}
                     onChange={(e) => setBorderColor(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Border Style</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Border Style</label>
                 <div className="flex gap-2">
                   {(['solid', 'dashed', 'none'] as BorderStyle[]).map((style) => (
                     <button
@@ -263,8 +263,8 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
                       onClick={() => setBorderStyle(style)}
                       className={`flex-1 px-4 py-2 rounded-lg border-2 capitalize transition-colors ${
                         borderStyle === style
-                          ? 'bg-blue-50 border-blue-500 text-blue-700'
-                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                          ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700'
+                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                       }`}
                     >
                       {style}
@@ -276,37 +276,37 @@ export function NodeDetailModal({ node, onClose }: NodeDetailModalProps) {
           )}
 
           {/* Position info */}
-          <div className="bg-gray-50 rounded-xl p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Position</label>
             <div className="flex gap-4">
               <div className="flex-1">
-                <span className="text-xs text-gray-500">X</span>
-                <p className="text-lg font-mono text-gray-900">{Math.round(node.position.x)}</p>
+                <span className="text-xs text-gray-500 dark:text-gray-400">X</span>
+                <p className="text-lg font-mono text-gray-900 dark:text-gray-100">{Math.round(node.position.x)}</p>
               </div>
               <div className="flex-1">
-                <span className="text-xs text-gray-500">Y</span>
-                <p className="text-lg font-mono text-gray-900">{Math.round(node.position.y)}</p>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Y</span>
+                <p className="text-lg font-mono text-gray-900 dark:text-gray-100">{Math.round(node.position.y)}</p>
               </div>
             </div>
           </div>
 
           {/* Created date for comments */}
           {isComment && commentData?.createdAt && (
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               Created: {new Date(commentData.createdAt).toLocaleString()}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
-          <p className="text-xs text-gray-400">
-            Press <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">Cmd+S</kbd> to save
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Press <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400">Cmd+S</kbd> to save
           </p>
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Cancel
             </button>

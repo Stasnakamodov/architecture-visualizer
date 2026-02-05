@@ -67,7 +67,7 @@ export const EditableNode = memo(
 
         <div
           className={`
-            px-3 py-2 rounded-lg border-2 bg-white shadow-sm min-w-[100px] min-h-[50px]
+            px-3 py-2 rounded-lg border-2 bg-white dark:bg-gray-900 shadow-sm dark:shadow-gray-950 min-w-[100px] min-h-[50px]
             transition-shadow duration-200 h-full
             ${selected ? 'shadow-lg' : ''}
           `}
@@ -96,13 +96,13 @@ export const EditableNode = memo(
               placeholder="Enter text..."
             />
           ) : (
-            <div className="text-sm text-gray-900 whitespace-pre-wrap break-words">
+            <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
               {data.label}
             </div>
           )}
 
           {data.description && !isEditing && (
-            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
               {data.description}
             </p>
           )}

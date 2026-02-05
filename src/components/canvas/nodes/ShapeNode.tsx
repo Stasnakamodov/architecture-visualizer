@@ -99,14 +99,14 @@ export const ShapeNode = memo(({ data, selected, id }: NodeProps<ShapeNodeType>)
 
     if (shapeType === 'text') {
       return (
-        <span className="font-medium text-sm text-gray-900 text-center break-words">
+        <span className="font-medium text-sm text-gray-900 dark:text-gray-100 text-center break-words">
           {data.label || 'Double-click to edit'}
         </span>
       );
     }
 
     return data.label ? (
-      <span className="font-medium text-sm text-gray-900 text-center break-words px-2">
+      <span className="font-medium text-sm text-gray-900 dark:text-gray-100 text-center break-words px-2">
         {data.label}
       </span>
     ) : null;

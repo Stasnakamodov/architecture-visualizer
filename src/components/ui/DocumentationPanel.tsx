@@ -74,25 +74,25 @@ export function DocumentationPanel({
           exit={{ x: 400, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           className={`
-            bg-white border-l border-gray-200 shadow-lg overflow-hidden flex flex-col
+            bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-lg dark:shadow-gray-950 overflow-hidden flex flex-col
             ${isExpanded ? 'w-[500px]' : 'w-96'}
             transition-all duration-300
           `}
         >
           {/* Header */}
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between gap-2 flex-shrink-0">
-            <h3 className="font-semibold text-gray-900 truncate flex-1 text-lg">
+          <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 flex-shrink-0">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate flex-1 text-lg">
               {doc?.title || 'Node Details'}
             </h3>
             <div className="flex items-center gap-1">
               {hasFullContent && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
                   title={isExpanded ? 'Collapse' : 'Expand'}
                 >
                   <svg
-                    className={`w-4 h-4 text-gray-500 transition-transform ${
+                    className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${
                       isExpanded ? 'rotate-180' : ''
                     }`}
                     fill="none"
@@ -110,10 +110,10 @@ export function DocumentationPanel({
               )}
               <button
                 onClick={() => selectNode(null)}
-                className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
               >
                 <svg
-                  className="w-4 h-4 text-gray-500"
+                  className="w-4 h-4 text-gray-500 dark:text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -141,7 +141,7 @@ export function DocumentationPanel({
                       ${selectedNode.type === 'tech' ? 'bg-blue-100 text-blue-700' : ''}
                       ${selectedNode.type === 'database' ? 'bg-purple-100 text-purple-700' : ''}
                       ${selectedNode.type === 'business' ? 'bg-indigo-100 text-indigo-700' : ''}
-                      ${selectedNode.type === 'group' ? 'bg-gray-100 text-gray-700' : ''}
+                      ${selectedNode.type === 'group' ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' : ''}
                     `}
                   >
                     {selectedNode.type || 'default'}
@@ -152,7 +152,7 @@ export function DocumentationPanel({
                     doc.tags.slice(0, 3).map((tag) => (
                       <span
                         key={tag}
-                        className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full"
+                        className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full"
                       >
                         #{tag}
                       </span>
@@ -162,7 +162,7 @@ export function DocumentationPanel({
 
               {/* Full Markdown Content or Description */}
               {hasFullContent ? (
-                <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600 prose-a:text-blue-600 prose-code:text-purple-600 prose-code:bg-purple-50 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-table:text-sm">
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-600 dark:prose-p:text-gray-400 prose-a:text-blue-600 prose-code:text-purple-600 prose-code:bg-purple-50 dark:prose-code:bg-purple-900/30 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-table:text-sm">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
@@ -200,18 +200,18 @@ export function DocumentationPanel({
                       // Better table styling
                       table: ({ children }) => (
                         <div className="overflow-x-auto my-4">
-                          <table className="min-w-full border-collapse border border-gray-200">
+                          <table className="min-w-full border-collapse border border-gray-200 dark:border-gray-700">
                             {children}
                           </table>
                         </div>
                       ),
                       th: ({ children }) => (
-                        <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-left font-semibold">
+                        <th className="border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-left font-semibold">
                           {children}
                         </th>
                       ),
                       td: ({ children }) => (
-                        <td className="border border-gray-200 px-3 py-2">
+                        <td className="border border-gray-200 dark:border-gray-700 px-3 py-2">
                           {children}
                         </td>
                       ),
@@ -221,15 +221,15 @@ export function DocumentationPanel({
                   </ReactMarkdown>
                 </div>
               ) : (
-                <div className="prose prose-sm max-w-none">
-                  <p className="text-gray-600">{doc?.content}</p>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <p className="text-gray-600 dark:text-gray-400">{doc?.content}</p>
                 </div>
               )}
 
               {/* Connected Links */}
               {doc?.links && doc.links.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                     Linked Documents ({doc.links.length})
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -237,7 +237,7 @@ export function DocumentationPanel({
                       <button
                         key={link}
                         onClick={() => handleLinkInContent(link)}
-                        className="text-sm px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                        className="text-sm px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
                       >
                         <svg
                           className="w-3 h-3"
@@ -261,22 +261,22 @@ export function DocumentationPanel({
 
               {/* Node Properties (collapsed by default) */}
               {selectedNode && !hasFullContent && (
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
                     Properties
                   </h4>
 
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">ID</span>
-                      <span className="text-gray-900 font-mono text-xs">
+                      <span className="text-gray-500 dark:text-gray-400">ID</span>
+                      <span className="text-gray-900 dark:text-gray-100 font-mono text-xs">
                         {selectedNode.id}
                       </span>
                     </div>
 
                     {selectedNode.data.color && (
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-500">Color</span>
+                        <span className="text-gray-500 dark:text-gray-400">Color</span>
                         <div className="flex items-center gap-2">
                           <div
                             className="w-4 h-4 rounded border"

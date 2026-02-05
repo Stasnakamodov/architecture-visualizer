@@ -10,19 +10,24 @@ import { FileTree } from '@/components/canvas/FileTree';
 import { SavedCanvases } from '@/components/canvas/SavedCanvases';
 import { SaveDialog } from '@/components/canvas/SaveDialog';
 import { UnsavedChangesDialog } from '@/components/canvas/UnsavedChangesDialog';
+import { StepEditorModal } from '@/components/canvas/StepEditorModal';
 import { getRecentCanvases, getAllCanvases, type SavedCanvas } from '@/lib/storage/localStorage';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useTranslation } from '@/i18n/context';
 import type { AppNode, AppEdge } from '@/types/canvas';
 
 const CanvasViewer = dynamic(
   () => import('@/components/canvas/CanvasViewer'),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full h-full bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
-      </div>
-    ),
+    loading: () => {
+      const { t } = useTranslation();
+      return (
+        <div className="w-full h-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+          <div className="text-gray-400 dark:text-gray-500">{t('import.loading')}</div>
+        </div>
+      );
+    },
   }
 );
 
@@ -60,6 +65,8 @@ export default function ImportPage() {
     requestSaveDialog,
     resetCanvas,
     setVisualGroups,
+    setSteps,
+    steps: storeSteps,
     markClean,
     markDirty,
     openCanvas,
@@ -67,6 +74,8 @@ export default function ImportPage() {
     setCurrentCanvasName,
     setRequestSaveDialog,
   } = useCanvasStore();
+
+  const { t } = useTranslation();
 
   const handleReset = useCallback(() => {
     setCanvasData(null);
@@ -81,12 +90,13 @@ export default function ImportPage() {
   const handleImport = useCallback((data: CanvasData) => {
     setCanvasData(data);
     setCurrentCanvas(null);
-    // Clear visualGroups and mark as dirty when importing new data
+    // Clear visualGroups and steps, mark as dirty when importing new data
     setVisualGroups([]);
+    setSteps([]);
     markDirty();
     // Open canvas in store (no saved canvas yet)
     openCanvas(null, null);
-  }, [setVisualGroups, markDirty, openCanvas]);
+  }, [setVisualGroups, setSteps, markDirty, openCanvas]);
 
   // Check if there's auto-saved data
   const hasAutoSavedData = _hasHydrated && (
@@ -125,13 +135,15 @@ export default function ImportPage() {
     });
     // Load visualGroups from saved canvas (or clear if none)
     setVisualGroups(canvas.visualGroups || []);
+    // Load steps from saved canvas (or clear if none)
+    setSteps(canvas.steps || []);
     setCurrentCanvas(canvas);
     setShowSavedCanvases(false);
     // Mark as clean since we just loaded a saved canvas
     markClean();
     // Open canvas in store with name
     openCanvas(canvas.id, canvas.name);
-  }, [setVisualGroups, markClean, openCanvas]);
+  }, [setVisualGroups, setSteps, markClean, openCanvas]);
 
   // Load recent canvases on mount and check for canvas to open
   useEffect(() => {
@@ -196,7 +208,7 @@ export default function ImportPage() {
   }, [storeNodes, storeEdges, storeViewport, markDirty, openCanvas]);
 
   const handleClearAutoSaved = () => {
-    if (confirm('Clear all auto-saved data? This cannot be undone.')) {
+    if (confirm(t('import.confirmClear'))) {
       resetCanvas();
     }
   };
@@ -234,7 +246,7 @@ export default function ImportPage() {
           <div className="absolute top-4 right-4 w-72">
             <button
               onClick={() => setPanelExpanded(!panelExpanded)}
-              className="w-full flex items-center justify-between p-2.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl shadow-sm transition-colors"
+              className="w-full flex items-center justify-between p-2.5 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm dark:shadow-gray-950 transition-colors"
             >
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -243,12 +255,12 @@ export default function ImportPage() {
                   </svg>
                 </div>
                 <div className="text-left min-w-0">
-                  <p className="font-medium text-gray-900 text-xs">My Works</p>
-                  <p className="text-[10px] text-gray-500">{totalWorks} saved</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100 text-xs">{t('import.myWorks')}</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('import.saved', { count: totalWorks })}</p>
                 </div>
               </div>
               <svg
-                className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${panelExpanded ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${panelExpanded ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -259,14 +271,14 @@ export default function ImportPage() {
 
             {/* Expanded list */}
             {panelExpanded && (
-              <div className="mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-80 overflow-y-auto">
+              <div className="mt-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg dark:shadow-gray-950 overflow-hidden max-h-80 overflow-y-auto">
                 {/* Auto-saved session */}
                 {hasAutoSavedData && (
                   <div
-                    className="p-2.5 hover:bg-gray-50 border-b border-gray-100 cursor-pointer flex items-center gap-2.5"
+                    className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 cursor-pointer flex items-center gap-2.5"
                     onClick={() => setPreviewCanvas({
                       id: 'auto-save',
-                      name: 'Current Session',
+                      name: t('import.currentSession'),
                       nodes: storeNodes,
                       edges: storeEdges,
                       viewport: storeViewport,
@@ -280,10 +292,10 @@ export default function ImportPage() {
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-900 truncate">Current Session</p>
-                      <p className="text-[10px] text-gray-500">{storeNodes.length} nodes · {storeDocuments.length} docs</p>
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{t('import.currentSession')}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('import.nodesAndDocs', { nodes: storeNodes.length, docs: storeDocuments.length })}</p>
                     </div>
-                    <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">auto</span>
+                    <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">{t('import.auto')}</span>
                   </div>
                 )}
 
@@ -291,7 +303,7 @@ export default function ImportPage() {
                 {allCanvases.map((canvas) => (
                   <div
                     key={canvas.id}
-                    className="p-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-0 cursor-pointer flex items-center gap-2.5"
+                    className="p-2.5 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 last:border-0 cursor-pointer flex items-center gap-2.5"
                     onClick={() => setPreviewCanvas(canvas)}
                   >
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -300,14 +312,14 @@ export default function ImportPage() {
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-900 truncate">{canvas.name}</p>
-                      <p className="text-[10px] text-gray-500">{canvas.nodes.length} nodes</p>
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{canvas.name}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400">{canvas.nodes.length} {t('import.nodes')}</p>
                     </div>
                   </div>
                 ))}
 
                 {allCanvases.length === 0 && !hasAutoSavedData && (
-                  <p className="p-4 text-xs text-gray-400 text-center">No saved works yet</p>
+                  <p className="p-4 text-xs text-gray-400 dark:text-gray-500 text-center">{t('import.noSavedWorks')}</p>
                 )}
               </div>
             )}
@@ -319,14 +331,14 @@ export default function ImportPage() {
           {previewCanvas && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/50" onClick={() => setPreviewCanvas(null)} />
-              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+              <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl dark:shadow-gray-950 w-full max-w-lg overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b">
+                <div className="flex items-center justify-between p-4 border-b dark:border-gray-800">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{previewCanvas.name}</h3>
-                    <p className="text-xs text-gray-500">{formatTime(previewCanvas.updatedAt)}</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">{previewCanvas.name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{formatTime(previewCanvas.updatedAt)}</p>
                   </div>
-                  <button onClick={() => setPreviewCanvas(null)} className="text-gray-400 hover:text-gray-600">
+                  <button onClick={() => setPreviewCanvas(null)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -335,28 +347,28 @@ export default function ImportPage() {
 
                 {/* Stats */}
                 <div className="p-4 grid grid-cols-3 gap-3">
-                  <div className="text-center p-3 bg-gray-50 rounded-xl">
-                    <p className="text-2xl font-bold text-gray-900">{previewCanvas.nodes.length}</p>
-                    <p className="text-xs text-gray-500">nodes</p>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{previewCanvas.nodes.length}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('import.nodes')}</p>
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-xl">
-                    <p className="text-2xl font-bold text-gray-900">{previewCanvas.edges.length}</p>
-                    <p className="text-xs text-gray-500">edges</p>
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{previewCanvas.edges.length}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('import.edges')}</p>
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-xl">
-                    <p className="text-2xl font-bold text-gray-900">
+                  <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                       {previewCanvas.nodes.filter(n => n.type === 'group').length}
                     </p>
-                    <p className="text-xs text-gray-500">groups</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('import.groups')}</p>
                   </div>
                 </div>
 
                 {/* Node list preview */}
                 <div className="px-4 pb-2">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Contents</p>
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">{t('import.contents')}</p>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {previewCanvas.nodes.slice(0, 10).map((node) => (
-                      <div key={node.id} className="flex items-center gap-2 text-xs p-1.5 bg-gray-50 rounded">
+                      <div key={node.id} className="flex items-center gap-2 text-xs p-1.5 bg-gray-50 dark:bg-gray-800 rounded">
                         <span className={`w-2 h-2 rounded-full ${
                           node.type === 'tech' ? 'bg-blue-500' :
                           node.type === 'database' ? 'bg-purple-500' :
@@ -364,20 +376,20 @@ export default function ImportPage() {
                           node.type === 'group' ? 'bg-gray-500' :
                           node.type === 'comment' ? 'bg-amber-500' : 'bg-gray-400'
                         }`} />
-                        <span className="text-gray-700 truncate">{node.data?.label || node.id}</span>
-                        <span className="text-gray-400 text-[10px] ml-auto">{node.type}</span>
+                        <span className="text-gray-700 dark:text-gray-300 truncate">{node.data?.label || node.id}</span>
+                        <span className="text-gray-400 dark:text-gray-500 text-[10px] ml-auto">{node.type}</span>
                       </div>
                     ))}
                     {previewCanvas.nodes.length > 10 && (
-                      <p className="text-[10px] text-gray-400 text-center py-1">
-                        +{previewCanvas.nodes.length - 10} more...
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center py-1">
+                        {t('import.more', { count: previewCanvas.nodes.length - 10 })}
                       </p>
                     )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="p-4 border-t flex gap-2">
+                <div className="p-4 border-t dark:border-gray-800 flex gap-2">
                   <button
                     onClick={() => {
                       if (previewCanvas.id === 'auto-save') {
@@ -389,7 +401,7 @@ export default function ImportPage() {
                     }}
                     className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium text-sm transition-colors"
                   >
-                    Open
+                    {t('import.open')}
                   </button>
                   {previewCanvas.id === 'auto-save' && (
                     <button
@@ -397,7 +409,7 @@ export default function ImportPage() {
                         handleClearAutoSaved();
                         setPreviewCanvas(null);
                       }}
-                      className="py-2.5 px-4 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                      className="py-2.5 px-4 text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -415,12 +427,12 @@ export default function ImportPage() {
           {recentCanvases.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-700">Recent</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('import.recent')}</h3>
                 <button
                   onClick={() => setShowSavedCanvases(true)}
                   className="text-xs text-blue-600 hover:text-blue-700"
                 >
-                  View all
+                  {t('import.viewAll')}
                 </button>
               </div>
               <div className="space-y-2">
@@ -428,7 +440,7 @@ export default function ImportPage() {
                   <button
                     key={canvas.id}
                     onClick={() => handleLoadCanvas(canvas)}
-                    className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors text-left"
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,8 +448,8 @@ export default function ImportPage() {
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{canvas.name}</p>
-                      <p className="text-xs text-gray-500">{canvas.nodes.length} nodes</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{canvas.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{canvas.nodes.length} {t('import.nodes')}</p>
                     </div>
                   </button>
                 ))}
@@ -452,26 +464,26 @@ export default function ImportPage() {
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                 importMode === 'folder'
                   ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
-              Folder
+              {t('import.folder')}
             </button>
             <button
               onClick={() => setImportMode('canvas')}
               className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                 importMode === 'canvas'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
-              Canvas
+              {t('import.canvas')}
             </button>
             <button
               onClick={() => setShowSavedCanvases(true)}
-              className="flex-1 py-2 px-3 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              className="flex-1 py-2 px-3 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
-              Saved
+              {t('import.savedTab')}
             </button>
           </div>
 
@@ -498,33 +510,35 @@ export default function ImportPage() {
 
   // Canvas view - full screen with sidebar
   return (
-    <div className="h-[calc(100vh-48px)] flex overflow-hidden">
-      {/* File Tree Sidebar - left */}
-      <FileTree
-        onNodeSelect={handleNodeSelect}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-
-      {/* Main Canvas Area */}
-      <div className="flex-1 relative">
-        {/* Floating toolbar - top left */}
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-          <ViewModeSwitch />
-          <span className="text-xs text-gray-500 bg-white/80 px-2 py-1 rounded">
-            {canvasData.nodes.length} · {canvasData.edges.length}
-          </span>
-        </div>
-
-        {/* Canvas */}
-        <CanvasViewer
-          initialNodes={canvasData.nodes}
-          initialEdges={canvasData.edges}
-          className="h-full"
-          onSave={() => setShowSaveDialog(true)}
-          onShowSaved={() => setShowSavedCanvases(true)}
-          onClose={handleReset}
+    <div className="h-[calc(100vh-48px)] flex flex-col overflow-hidden">
+      <div className="flex-1 flex overflow-hidden">
+        {/* File Tree Sidebar - left */}
+        <FileTree
+          onNodeSelect={handleNodeSelect}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
+
+        {/* Main Canvas Area */}
+        <div className="flex-1 relative">
+          {/* Floating toolbar - top left */}
+          <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+            <ViewModeSwitch />
+            <span className="text-xs text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-900/80 px-2 py-1 rounded">
+              {canvasData.nodes.length} · {canvasData.edges.length}
+            </span>
+          </div>
+
+          {/* Canvas */}
+          <CanvasViewer
+            initialNodes={canvasData.nodes}
+            initialEdges={canvasData.edges}
+            className="h-full"
+            onSave={() => setShowSaveDialog(true)}
+            onShowSaved={() => setShowSavedCanvases(true)}
+            onClose={handleReset}
+          />
+        </div>
       </div>
 
       {/* Modals */}
@@ -544,6 +558,7 @@ export default function ImportPage() {
             edges={storeEdges.length > 0 ? storeEdges : canvasData.edges}
             viewport={canvasData.viewport}
             visualGroups={storeVisualGroups}
+            steps={storeSteps}
             existingCanvas={currentCanvas}
             onSave={handleSave}
             onClose={() => setShowSaveDialog(false)}
@@ -560,6 +575,9 @@ export default function ImportPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Step Editor Modal */}
+      <StepEditorModal />
     </div>
   );
 }

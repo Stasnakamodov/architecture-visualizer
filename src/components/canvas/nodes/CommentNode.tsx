@@ -61,11 +61,11 @@ export const CommentNode = memo(({ data, selected, id }: NodeProps<CommentNodeTy
       <div
         className={`
           px-3 py-2 rounded-lg border-2 h-full min-w-[150px]
-          bg-gradient-to-br from-amber-50 to-yellow-50
+          bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950
           transition-all duration-200
           ${selected
-            ? 'shadow-xl ring-2 ring-amber-400 ring-offset-2 border-amber-400'
-            : 'shadow-md border-amber-200 hover:border-amber-300'
+            ? 'shadow-xl ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-gray-900 border-amber-400'
+            : 'shadow-md border-amber-200 dark:border-amber-700 hover:border-amber-300 dark:hover:border-amber-600'
           }
         `}
         onDoubleClick={handleDoubleClick}
@@ -78,7 +78,7 @@ export const CommentNode = memo(({ data, selected, id }: NodeProps<CommentNodeTy
           <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
           </svg>
-          <span className="text-xs font-medium text-amber-700 uppercase tracking-wide">Comment</span>
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Comment</span>
         </div>
 
         {/* Content */}
@@ -94,7 +94,7 @@ export const CommentNode = memo(({ data, selected, id }: NodeProps<CommentNodeTy
             rows={3}
           />
         ) : (
-          <div className="text-sm text-gray-800 whitespace-pre-wrap break-words min-h-[40px]">
+          <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words min-h-[40px]">
             {data.label || (
               <span className="text-gray-400 italic">Double-click to edit...</span>
             )}

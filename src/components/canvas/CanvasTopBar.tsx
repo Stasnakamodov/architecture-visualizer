@@ -73,7 +73,7 @@ export function CanvasTopBar({ canvasName, onBack, onSave }: CanvasTopBarProps) 
         <div className="pointer-events-auto">
           <button
             onClick={onBack}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-gray-900 rounded-lg shadow-sm border border-gray-200 transition-colors text-sm font-medium"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-900 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition-colors text-sm font-medium"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -83,13 +83,13 @@ export function CanvasTopBar({ canvasName, onBack, onSave }: CanvasTopBarProps) 
         </div>
 
         {/* Center: Canvas name + status */}
-        <div className="pointer-events-auto flex items-center gap-3 px-4 py-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-gray-200 min-w-[200px]">
+        <div className="pointer-events-auto flex items-center gap-3 px-4 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl shadow-md dark:shadow-gray-950 border border-gray-200 dark:border-gray-700 min-w-[200px]">
           {canvasName ? (
-            <span className="text-sm font-semibold text-gray-800">{canvasName}</span>
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{canvasName}</span>
           ) : (
             <span className="text-sm text-gray-500 italic">Untitled</span>
           )}
-          <div className="w-px h-5 bg-gray-300" />
+          <div className="w-px h-5 bg-gray-300 dark:bg-gray-600" />
           {renderSaveStatus()}
         </div>
 
@@ -102,7 +102,7 @@ export function CanvasTopBar({ canvasName, onBack, onSave }: CanvasTopBarProps) 
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-sm transition-colors text-sm font-medium ${
                 isDirty
                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
               }`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

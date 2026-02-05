@@ -214,6 +214,18 @@ export function convertFolderToCanvas(
   // Calculate positions
   const positions = layoutNodes(parsedFiles, fileMap);
 
+  // Deduplicate node IDs (files with same name in different folders)
+  const usedIds = new Set<string>();
+  function uniqueId(name: string): string {
+    let id = name;
+    let i = 2;
+    while (usedIds.has(id)) {
+      id = `${name}-${i++}`;
+    }
+    usedIds.add(id);
+    return id;
+  }
+
   // Create nodes
   const nodes: AppNode[] = parsedFiles.map((file) => {
     const pos = positions.get(file.name) || { x: 0, y: 0 };
@@ -221,7 +233,7 @@ export function convertFolderToCanvas(
     const color = getNodeColor(file);
 
     return {
-      id: file.name,
+      id: uniqueId(file.name),
       type: nodeType,
       position: pos,
       data: {
