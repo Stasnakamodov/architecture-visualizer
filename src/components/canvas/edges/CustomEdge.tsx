@@ -22,6 +22,7 @@ interface CustomEdgeData {
   sourceColor?: string;
   targetColor?: string;
   showGradient?: boolean;
+  dimmed?: boolean;
 }
 
 // Get strokeDasharray based on line style
@@ -94,20 +95,24 @@ export const CustomEdge = memo(
     const edgeType = edgeData?.edgeType || 'arrow';
     const lineStyle = edgeData?.lineStyle;
     const label = edgeData?.label;
+    const isDimmed = edgeData?.dimmed || false;
 
     // Determine colors: node data.color takes priority, then data prop fallback
     const hasNodeColors = !!srcNodeColor || !!tgtNodeColor;
 
     let sourceColor: string;
     let targetColor: string;
-    if (srcNodeColor && tgtNodeColor) {
+    if (isDimmed) {
+      sourceColor = INACTIVE_COLOR;
+      targetColor = INACTIVE_COLOR;
+    } else if (srcNodeColor && tgtNodeColor) {
       sourceColor = srcNodeColor;
       targetColor = tgtNodeColor;
     } else if (srcNodeColor) {
       sourceColor = srcNodeColor;
-      targetColor = srcNodeColor;
+      targetColor = INACTIVE_COLOR;
     } else if (tgtNodeColor) {
-      sourceColor = tgtNodeColor;
+      sourceColor = INACTIVE_COLOR;
       targetColor = tgtNodeColor;
     } else {
       sourceColor = edgeData?.sourceColor || '#6366f1';
@@ -115,7 +120,7 @@ export const CustomEdge = memo(
     }
 
     // showGradient: true when nodes have colors, or from data prop (selection/group)
-    const showGradient = hasNodeColors || (edgeData?.showGradient || false);
+    const showGradient = isDimmed ? false : (hasNodeColors || (edgeData?.showGradient || false));
 
     // SVG-safe ID for defs references (edge IDs may contain spaces, Cyrillic, emoji, ">")
     const safeId = useMemo(
@@ -127,16 +132,17 @@ export const CustomEdge = memo(
     const markerStartId = `ems-${safeId}`;
 
     // Visual styling based on state
-    const strokeWidth = showGradient ? 2.5 : 1.5;
-    const strokeOpacity = showGradient ? 1 : 0.5;
+    const strokeWidth = isDimmed ? 1 : (showGradient ? 2.5 : 1.5);
+    const strokeOpacity = isDimmed ? 0.15 : (showGradient ? 1 : 0.5);
 
     // Determine if we need markers
     const showEndMarker = edgeType === 'arrow' || edgeType === 'bidirectional' || edgeType === 'default';
     const showStartMarker = edgeType === 'bidirectional';
 
     // Colors for markers
-    const markerEndColor = showGradient ? targetColor : INACTIVE_COLOR;
-    const markerStartColor = showGradient ? sourceColor : INACTIVE_COLOR;
+    // Reversed: marker at end = sourceColor (shows "where from"), marker at start = targetColor
+    const markerEndColor = showGradient ? sourceColor : INACTIVE_COLOR;
+    const markerStartColor = showGradient ? targetColor : INACTIVE_COLOR;
 
     // Use SVG gradient when two different colors, direct color otherwise
     const useGradientStroke = showGradient && sourceColor !== targetColor;
@@ -147,7 +153,7 @@ export const CustomEdge = memo(
     return (
       <>
         <defs>
-          {/* Linear gradient along the edge: source color → target color */}
+          {/* Reversed two-tone: target color at source half, source color at target half */}
           {useGradientStroke && (
             <linearGradient
               id={gradientId}
@@ -157,8 +163,10 @@ export const CustomEdge = memo(
               y2={targetY}
               gradientUnits="userSpaceOnUse"
             >
-              <stop offset="0%" stopColor={sourceColor} />
-              <stop offset="100%" stopColor={targetColor} />
+              <stop offset="0%" stopColor={targetColor} />
+              <stop offset="50%" stopColor={targetColor} />
+              <stop offset="50%" stopColor={sourceColor} />
+              <stop offset="100%" stopColor={sourceColor} />
             </linearGradient>
           )}
 

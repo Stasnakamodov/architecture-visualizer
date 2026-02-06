@@ -56,53 +56,59 @@ export function StepEditToolbar() {
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: -60, opacity: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="absolute top-4 left-1/2 -translate-x-1/2 z-20"
+      className="absolute top-3 left-1/2 -translate-x-1/2 z-20"
     >
-      <div className="flex items-center gap-3 px-4 py-2.5 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-        {/* Blue indicator dot */}
-        <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse flex-shrink-0" />
+      <div className="flex items-center gap-2.5 px-3 py-2 bg-white/90 dark:bg-[#1a1a2e]/90 backdrop-blur-xl rounded-xl shadow-lg shadow-black/10 dark:shadow-black/30 border border-gray-200/60 dark:border-white/[0.08]">
+        {/* Status indicator */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+          <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+            {t('stepEditor.editingStep')}
+          </span>
+        </div>
 
-        {/* Label */}
-        <span className="text-xs font-medium text-blue-600 dark:text-blue-400 flex-shrink-0">
-          {t('stepEditor.editingStep')}
-        </span>
+        <div className="w-px h-5 bg-gray-200 dark:bg-white/[0.08]" />
 
-        {/* Separator */}
-        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
-
-        {/* Inline name input */}
+        {/* Step name input */}
         <input
           ref={inputRef}
           type="text"
           value={step.name}
           onChange={(e) => updateStep(editingStepId, { name: e.target.value })}
-          className="w-32 px-2 py-1 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100"
+          className="w-36 px-2 py-1 text-xs bg-gray-50 dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.08] rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/30 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600"
           placeholder={t('stepEditor.stepName')}
         />
 
-        {/* Node count */}
-        <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
-          {step.nodeIds.length}/{nodes.length}
+        {/* Node counter */}
+        <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400 flex-shrink-0">
+          {step.nodeIds.length}
+          <span className="text-gray-300 dark:text-gray-600">/{step.canvasNodeIds?.length ?? nodes.length}</span>
         </span>
 
-        {/* Separator */}
-        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+        <div className="w-px h-5 bg-gray-200 dark:bg-white/[0.08]" />
 
-        {/* Cancel button */}
-        <button
-          onClick={cancelStepEditing}
-          className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          {t('stepEditor.cancelEditing')}
-        </button>
+        {/* Hint */}
+        <span className="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+          {t('stepEditor.clickToToggle')}
+        </span>
 
-        {/* Done button */}
-        <button
-          onClick={handleConfirm}
-          className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          {t('stepEditor.doneEditing')}
-        </button>
+        <div className="w-px h-5 bg-gray-200 dark:bg-white/[0.08]" />
+
+        {/* Actions */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={cancelStepEditing}
+            className="px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-lg transition-colors"
+          >
+            {t('stepEditor.cancelEditing')}
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+          >
+            {t('stepEditor.doneEditing')}
+          </button>
+        </div>
       </div>
     </motion.div>
   );

@@ -117,7 +117,16 @@
     "enterCollectionName": "Введите название коллекции...",
     "selectItems": "Выберите элементы",
     "itemsSelected": "{count} выбрано",
-    "noItems": "Нет доступных элементов"
+    "noItems": "Нет доступных элементов",
+    "scenarios": "Сценарии",
+    "noScenarios": "Нет сценариев",
+    "createScenario": "Сохранить как сценарий",
+    "noStepsForScenario": "Сначала создайте шаги, чтобы сохранить как сценарий",
+    "scenarioName": "Название сценария",
+    "enterScenarioName": "Введите название...",
+    "deleteScenario": "Удалить сценарий",
+    "backToBase": "Вернуться к базовому степперу",
+    "scenarioSteps": "{count} шагов"
   },
   "dialogs": {
     "saveCanvas": "Сохранить канвас",
@@ -196,6 +205,13 @@
     "export": "Экспорт JSON",
     "import": "Импорт JSON",
     "success": "Данные успешно импортированы!"
+  },
+  "scenario": {
+    "editing": "Сценарий",
+    "scenarioName": "Название сценария...",
+    "editNodes": "Редактировать ноды",
+    "back": "Назад",
+    "stepOf": "Шаг {current} из {total}"
   },
   "projects": {
     "title": "Проекты",

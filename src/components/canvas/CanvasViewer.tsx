@@ -33,6 +33,7 @@ import { LayoutToolbar } from './LayoutToolbar';
 import { HistoryControls } from './HistoryControls';
 import { PropertyPanel } from './PropertyPanel';
 import { StepEditToolbar } from './StepEditToolbar';
+import { ScenarioToolbar } from './ScenarioToolbar';
 import { useTemporalStore } from './useTemporalStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useHydration } from '@/hooks/useHydration';
@@ -129,6 +130,9 @@ function CanvasViewerInner({
     editingStepId,
     toggleNodeInStep,
     cancelStepEditing,
+    activeScenarioId,
+    getCanvasNodeIdsForStep,
+    removeNodeFromCurrentStep,
   } = useCanvasStore();
 
   const reactFlow = useReactFlow();
@@ -294,10 +298,15 @@ function CanvasViewerInner({
   // Set of nodes selected for new group
   const selectedForGroupSet = useMemo(() => new Set(selectedForGroup), [selectedForGroup]);
 
-  // Stepper: get visible node IDs for current step
+  // Stepper: get visible node IDs for current step (highlighted nodes)
   const stepVisibleNodeIds = useMemo(() => {
     return getVisibleNodeIdsForStep();
   }, [getVisibleNodeIdsForStep, steps, activeStepId, isStepperActive]);
+
+  // Stepper: get canvas node IDs for current step (all nodes that exist on this step's canvas)
+  const stepCanvasNodeIds = useMemo(() => {
+    return getCanvasNodeIdsForStep();
+  }, [getCanvasNodeIdsForStep, steps, activeStepId, isStepperActive]);
 
   // Inline step editing: compute which nodes are in the editing step
   const editingStepNodeIds = useMemo(() => {
@@ -354,6 +363,11 @@ function CanvasViewerInner({
       result = nodes.filter((n) => ['business', 'group'].includes(n.type || ''));
     }
 
+    // Layer 2: Stepper canvas isolation — hide nodes not on this step's canvas
+    if (stepCanvasNodeIds) {
+      result = result.filter(node => stepCanvasNodeIds.has(node.id));
+    }
+
     // Inline step editing mode: override all dimming
     if (editingStepNodeIds !== null) {
       return result.map((node) => {
@@ -375,7 +389,7 @@ function CanvasViewerInner({
       });
     }
 
-    // Layer 2 & 3: Stepper + Collection — soft dimming
+    // Layer 3: Stepper highlighting + Collection — soft dimming
     return result.map((node) => {
       const isInActiveGroup = activeGroupNodeIds ? activeGroupNodeIds.has(node.id) : true;
       const isInActiveStep = stepVisibleNodeIds ? stepVisibleNodeIds.has(node.id) : true;
@@ -400,7 +414,7 @@ function CanvasViewerInner({
         },
       };
     });
-  }, [nodes, viewMode, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, isSelectingForGroup, selectedForGroupSet, editingStepNodeIds]);
+  }, [nodes, viewMode, selectedNodeId, activeGroupNodeIds, stepVisibleNodeIds, stepCanvasNodeIds, isSelectingForGroup, selectedForGroupSet, editingStepNodeIds]);
 
   // Node type to color mapping (matches node border colors)
   const typeColors: Record<string, string> = {
@@ -471,7 +485,8 @@ function CanvasViewerInner({
               ...edge.data,
               sourceColor: edgeSourceColor,
               targetColor: edgeTargetColor,
-              showGradient: bothInStep && hasNodeColors,
+              showGradient: bothInStep,
+              dimmed: !bothInStep,
               usePresentationRouting,
             },
           };
@@ -494,8 +509,11 @@ function CanvasViewerInner({
           ? Math.min(stepOpacity, collectionOpacity)
           : 1;
 
+        const isDimmed = combinedOpacity < 1;
+
         // Determine if this edge should show gradient/color
-        const showGradient = hasNodeColors || isSelected || (activeGroupNodeIds !== null && isInActiveGroup);
+        const hasActiveFilter = activeGroupNodeIds !== null || stepVisibleNodeIds !== null;
+        const showGradient = isDimmed ? false : (hasNodeColors || isSelected || (hasActiveFilter && !isDimmed));
 
         return {
           ...edge,
@@ -509,7 +527,8 @@ function CanvasViewerInner({
             ...edge.data,
             sourceColor: edgeSourceColor,
             targetColor: edgeTargetColor,
-            showGradient: showGradient || false,
+            showGradient,
+            dimmed: isDimmed,
             usePresentationRouting,
           },
         };
@@ -518,19 +537,25 @@ function CanvasViewerInner({
 
   const handleNodesChange: OnNodesChange<AppNode> = useCallback(
     (changes) => {
-      onNodesChange(changes);
+      // When stepper is active, block 'remove' changes — deletion is handled
+      // via removeNodeFromCurrentStep which hides nodes instead of deleting them
+      const filteredChanges = (isStepperActive && activeStepId)
+        ? changes.filter(c => c.type !== 'remove')
+        : changes;
+
+      onNodesChange(filteredChanges);
       // Не помечать dirty во время начальной загрузки (fitView двигает ноды)
       if (isInitialLoad.current) return;
       // Mark as dirty only for real user changes (position, add, remove, replace)
       // Skip 'dimensions' (React Flow measuring) and 'select' (selection state)
-      const hasUserChanges = changes.some(
+      const hasUserChanges = filteredChanges.some(
         (c) => c.type !== 'dimensions' && c.type !== 'select'
       );
       if (hasUserChanges) {
         markDirty();
       }
     },
-    [onNodesChange, markDirty]
+    [onNodesChange, markDirty, isStepperActive, activeStepId]
   );
 
   const handleEdgesChange: OnEdgesChange<AppEdge> = useCallback(
@@ -567,12 +592,24 @@ function CanvasViewerInner({
   // Handle node deletion - also remove connected edges
   const onNodesDelete = useCallback(
     (deleted: AppNode[]) => {
+      if (isStepperActive && activeStepId) {
+        // Stepper active: don't delete from global array, only from current step
+        deleted.forEach(n => removeNodeFromCurrentStep(n.id));
+        // Restore deleted nodes back to React Flow (undo the removal)
+        setNodes(nds => {
+          const existingIds = new Set(nds.map(n => n.id));
+          const toRestore = deleted.filter(n => !existingIds.has(n.id));
+          return toRestore.length > 0 ? [...nds, ...toRestore] : nds;
+        });
+        return;
+      }
+      // Normal deletion (stepper not active)
       const deletedIds = new Set(deleted.map((n) => n.id));
       setEdges((eds) =>
         eds.filter((e) => !deletedIds.has(e.source) && !deletedIds.has(e.target))
       );
     },
-    [setEdges]
+    [setEdges, isStepperActive, activeStepId, removeNodeFromCurrentStep, setNodes]
   );
 
   const onNodeClick = useCallback(
@@ -898,9 +935,10 @@ function CanvasViewerInner({
         />
       </ReactFlow>
 
-      {/* Step Edit Toolbar */}
+      {/* Step Edit Toolbar / Scenario Toolbar */}
       <AnimatePresence>
         {editingStepId && <StepEditToolbar />}
+        {activeScenarioId && !editingStepId && <ScenarioToolbar />}
       </AnimatePresence>
 
       {/* Collection Selection Mode Indicator */}

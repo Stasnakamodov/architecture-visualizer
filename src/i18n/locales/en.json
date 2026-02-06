@@ -117,7 +117,16 @@
     "enterCollectionName": "Enter collection name...",
     "selectItems": "Select Items",
     "itemsSelected": "{count} selected",
-    "noItems": "No items available"
+    "noItems": "No items available",
+    "scenarios": "Scenarios",
+    "noScenarios": "No scenarios yet",
+    "createScenario": "Save as scenario",
+    "noStepsForScenario": "Create steps first to save as scenario",
+    "scenarioName": "Scenario name",
+    "enterScenarioName": "Enter name...",
+    "deleteScenario": "Delete scenario",
+    "backToBase": "Back to base stepper",
+    "scenarioSteps": "{count} steps"
   },
   "dialogs": {
     "saveCanvas": "Save Canvas",
@@ -196,6 +205,13 @@
     "export": "Export JSON",
     "import": "Import JSON",
     "success": "Data imported successfully!"
+  },
+  "scenario": {
+    "editing": "Scenario",
+    "scenarioName": "Scenario name...",
+    "editNodes": "Edit nodes",
+    "back": "Back",
+    "stepOf": "Step {current} of {total}"
   },
   "projects": {
     "title": "Projects",

@@ -28,6 +28,15 @@ export interface VisualGroup {
   createdAt: string;
 }
 
+// Scenario (saved stepper configuration)
+export interface Scenario {
+  id: string;
+  name: string;
+  color: string;
+  steps: Step[]; // Full independent set of steps
+  createdAt: string;
+}
+
 // Document type (exists in sidebar, can be added to canvas)
 export interface Document {
   id: string;
@@ -48,6 +57,8 @@ interface CanvasState {
   folders: Folder[];
   documents: Document[];
   visualGroups: VisualGroup[];
+  scenarios: Scenario[];
+  activeScenarioId: string | null;
   viewport: Viewport;
   viewMode: ViewMode;
   selectedNodeId: string | null;
@@ -84,6 +95,9 @@ interface CanvasState {
   activeStepId: string | null;
   isStepperActive: boolean;
   isEditingSteps: boolean;
+
+  // Scenario base stepper backup
+  baseSteps: Step[] | null; // null = no scenario active, base steps are in `steps`
 
   // Inline step editing
   editingStepId: string | null;
@@ -131,6 +145,13 @@ interface CanvasState {
   setActiveVisualGroup: (id: string | null) => void;
   addNodesToVisualGroup: (groupId: string, nodeIds: string[]) => void;
   removeNodesFromVisualGroup: (groupId: string, nodeIds: string[]) => void;
+  // Scenario actions
+  createScenario: (name: string, color?: string) => string;
+  updateScenario: (id: string, updates: Partial<Pick<Scenario, 'name' | 'color'>>) => void;
+  deleteScenario: (id: string) => void;
+  setActiveScenario: (id: string | null) => void;
+  syncActiveScenarioSteps: () => void;
+
   // Group selection mode
   startGroupSelection: () => void;
   cancelGroupSelection: () => void;
@@ -158,6 +179,9 @@ interface CanvasState {
   saveStepNodePositions: (stepId: string) => void;
   applyStepNodePositions: (stepId: string) => void;
   getVisibleNodeIdsForStep: () => Set<string> | null;
+  getCanvasNodeIdsForStep: () => Set<string> | null;
+  addNodeToCurrentStep: (nodeId: string) => void;
+  removeNodeFromCurrentStep: (nodeId: string) => void;
 
   // Inline step editing actions
   setEditingStepId: (id: string | null) => void;
@@ -197,6 +221,8 @@ const initialState = {
   folders: [] as Folder[],
   documents: [] as Document[],
   visualGroups: [] as VisualGroup[],
+  scenarios: [] as Scenario[],
+  activeScenarioId: null as string | null,
   viewport: { x: 0, y: 0, zoom: 1 },
   viewMode: 'technical' as ViewMode,
   selectedNodeId: null as string | null,
@@ -228,6 +254,8 @@ const initialState = {
   activeStepId: null as string | null,
   isStepperActive: false,
   isEditingSteps: false,
+  // Scenario base stepper backup
+  baseSteps: null as Step[] | null,
   // Inline step editing
   editingStepId: null as string | null,
   editingStepOriginalNodeIds: [] as string[],
@@ -285,6 +313,8 @@ export const useCanvasStore = create<CanvasState>()(
           editingStepOriginalNodeIds: [],
           editingStepOriginalNodePositions: null,
           preStepperPositions: null,
+          baseSteps: null,
+          activeScenarioId: null,
         }),
         createGroup: (label) => {
           const { nodes, selectedNodeIds, edges } = get();
@@ -328,6 +358,8 @@ export const useCanvasStore = create<CanvasState>()(
             selectedNodeIds: [],
             selectedNodeId: groupId,
           });
+
+          get().addNodeToCurrentStep(groupId);
         },
 
         createComment: (position) => {
@@ -351,6 +383,7 @@ export const useCanvasStore = create<CanvasState>()(
             selectedNodeIds: [commentId],
           });
 
+          get().addNodeToCurrentStep(commentId);
           return commentId;
         },
 
@@ -477,6 +510,8 @@ export const useCanvasStore = create<CanvasState>()(
             selectedNodeId: nodeId,
             selectedNodeIds: [nodeId],
           });
+
+          get().addNodeToCurrentStep(nodeId);
         },
 
         // Visual Group actions
@@ -543,6 +578,150 @@ export const useCanvasStore = create<CanvasState>()(
           });
         },
 
+        // Scenario actions
+        createScenario: (name, color) => {
+          const { scenarios, steps, activeScenarioId, nodes } = get();
+          const scenarioId = `scenario-${Date.now()}`;
+          const colorPalette = ['#8b5cf6', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#ef4444'];
+          const assignedColor = color || colorPalette[scenarios.length % colorPalette.length];
+          // Snapshot current node positions
+          const positions: Record<string, { x: number; y: number }> = {};
+          nodes.forEach((node) => {
+            positions[node.id] = { x: node.position.x, y: node.position.y };
+          });
+          // Create one empty step — user will select nodes via inline editing
+          const initialStep: Step = {
+            id: `step-${Date.now()}-0`,
+            name: 'Step 1',
+            description: '',
+            order: 0,
+            mode: 'independent',
+            nodeIds: [],
+            canvasNodeIds: nodes.map(n => n.id),
+            nodePositions: positions,
+            viewport: null,
+            createdAt: new Date().toISOString(),
+          };
+          const newScenario: Scenario = {
+            id: scenarioId,
+            name,
+            color: assignedColor,
+            steps: [initialStep],
+            createdAt: new Date().toISOString(),
+          };
+          // Backup current steps as base
+          const newBaseSteps = activeScenarioId
+            ? get().baseSteps
+            : steps.map(st => ({ ...st, nodeIds: [...st.nodeIds], canvasNodeIds: [...(st.canvasNodeIds || [])], nodePositions: st.nodePositions ? { ...st.nodePositions } : null, viewport: st.viewport ? { ...st.viewport } : null }));
+          set({
+            scenarios: [...scenarios, newScenario],
+            steps: [initialStep],
+            baseSteps: newBaseSteps,
+            activeScenarioId: scenarioId,
+            activeStepId: initialStep.id,
+            isStepperActive: true,
+          });
+          // Start inline step editing immediately
+          get().setEditingStepId(initialStep.id);
+          get().markDirty();
+          return scenarioId;
+        },
+
+        updateScenario: (id, updates) => {
+          const { scenarios } = get();
+          set({
+            scenarios: scenarios.map(s =>
+              s.id === id ? { ...s, ...updates } : s
+            ),
+          });
+          get().markDirty();
+        },
+
+        deleteScenario: (id) => {
+          const { scenarios, activeScenarioId, baseSteps } = get();
+          if (activeScenarioId === id) {
+            // Restore base steps
+            const sorted = baseSteps ? [...baseSteps].sort((a, b) => a.order - b.order) : [];
+            set({
+              scenarios: scenarios.filter(s => s.id !== id),
+              steps: baseSteps || [],
+              baseSteps: null,
+              activeScenarioId: null,
+              activeStepId: sorted[0]?.id || null,
+              isStepperActive: sorted.length > 0 ? get().isStepperActive : false,
+            });
+          } else {
+            set({
+              scenarios: scenarios.filter(s => s.id !== id),
+            });
+          }
+          get().markDirty();
+        },
+
+        setActiveScenario: (id) => {
+          const { scenarios, steps, baseSteps, activeScenarioId, isStepperActive } = get();
+
+          if (id === null) {
+            // Deactivate: save current steps back to active scenario, restore base
+            if (activeScenarioId) {
+              const updatedScenarios = scenarios.map(s =>
+                s.id === activeScenarioId ? { ...s, steps: steps.map(st => ({ ...st, nodeIds: [...st.nodeIds], canvasNodeIds: [...(st.canvasNodeIds || [])], nodePositions: st.nodePositions ? { ...st.nodePositions } : null, viewport: st.viewport ? { ...st.viewport } : null })) } : s
+              );
+              const restored = baseSteps || [];
+              const sorted = [...restored].sort((a, b) => a.order - b.order);
+              set({
+                scenarios: updatedScenarios,
+                steps: restored,
+                baseSteps: null,
+                activeScenarioId: null,
+                activeStepId: isStepperActive ? (sorted[0]?.id || null) : null,
+                isStepperActive: isStepperActive && sorted.length > 0,
+              });
+            }
+          } else {
+            // Activate scenario
+            const scenario = scenarios.find(s => s.id === id);
+            if (!scenario) return;
+
+            let updatedScenarios = scenarios;
+            let newBaseSteps = baseSteps;
+
+            if (activeScenarioId) {
+              // Another scenario was active: save current steps back to it
+              updatedScenarios = updatedScenarios.map(s =>
+                s.id === activeScenarioId ? { ...s, steps: steps.map(st => ({ ...st, nodeIds: [...st.nodeIds], canvasNodeIds: [...(st.canvasNodeIds || [])], nodePositions: st.nodePositions ? { ...st.nodePositions } : null, viewport: st.viewport ? { ...st.viewport } : null })) } : s
+              );
+            } else {
+              // No scenario was active: backup current steps as base
+              newBaseSteps = steps.map(st => ({ ...st, nodeIds: [...st.nodeIds], canvasNodeIds: [...(st.canvasNodeIds || [])], nodePositions: st.nodePositions ? { ...st.nodePositions } : null, viewport: st.viewport ? { ...st.viewport } : null }));
+            }
+
+            // Load scenario steps
+            const scenarioSteps = scenario.steps.map(st => ({ ...st, nodeIds: [...st.nodeIds], canvasNodeIds: [...(st.canvasNodeIds || [])], nodePositions: st.nodePositions ? { ...st.nodePositions } : null, viewport: st.viewport ? { ...st.viewport } : null }));
+            const sorted = [...scenarioSteps].sort((a, b) => a.order - b.order);
+
+            set({
+              scenarios: updatedScenarios,
+              steps: scenarioSteps,
+              baseSteps: newBaseSteps,
+              activeScenarioId: id,
+              activeStepId: sorted[0]?.id || null,
+              isStepperActive: sorted.length > 0,
+            });
+          }
+          get().markDirty();
+        },
+
+        syncActiveScenarioSteps: () => {
+          const { activeScenarioId, scenarios, steps } = get();
+          if (!activeScenarioId) return;
+          set({
+            scenarios: scenarios.map(s =>
+              s.id === activeScenarioId ? { ...s, steps: steps.map(st => ({ ...st, nodeIds: [...st.nodeIds], canvasNodeIds: [...(st.canvasNodeIds || [])], nodePositions: st.nodePositions ? { ...st.nodePositions } : null, viewport: st.viewport ? { ...st.viewport } : null })) } : s
+            ),
+          });
+        },
+
         // Group selection mode
         startGroupSelection: () => {
           const { editingStepId, editingStepOriginalNodeIds, steps } = get();
@@ -571,7 +750,16 @@ export const useCanvasStore = create<CanvasState>()(
         },
 
         // Stepper actions
-        setSteps: (steps) => set({ steps }),
+        setSteps: (steps) => {
+          // Migrate: fill canvasNodeIds if missing (backward compat)
+          const { nodes } = get();
+          const allNodeIds = nodes.map(n => n.id);
+          const migrated = steps.map(s => ({
+            ...s,
+            canvasNodeIds: s.canvasNodeIds ?? [...allNodeIds],
+          }));
+          set({ steps: migrated });
+        },
 
         createStep: (name) => {
           const { steps, nodes } = get();
@@ -597,6 +785,7 @@ export const useCanvasStore = create<CanvasState>()(
             order: steps.length,
             mode: 'independent',
             nodeIds: lastStep ? [...lastStep.nodeIds] : [],
+            canvasNodeIds: lastStep ? [...lastStep.canvasNodeIds] : nodes.map(n => n.id),
             nodePositions,
             viewport: null,
             createdAt: new Date().toISOString(),
@@ -785,6 +974,44 @@ export const useCanvasStore = create<CanvasState>()(
           return ids;
         },
 
+        getCanvasNodeIdsForStep: () => {
+          const { steps, activeStepId, isStepperActive } = get();
+          if (!isStepperActive || !activeStepId) return null;
+          const activeStep = steps.find(s => s.id === activeStepId);
+          if (!activeStep) return null;
+          return new Set(activeStep.canvasNodeIds);
+        },
+
+        addNodeToCurrentStep: (nodeId: string) => {
+          const { activeStepId, isStepperActive, steps } = get();
+          if (!isStepperActive || !activeStepId) return;
+          set({
+            steps: steps.map(s => {
+              if (s.id !== activeStepId) return s;
+              return {
+                ...s,
+                canvasNodeIds: [...s.canvasNodeIds, nodeId],
+                nodeIds: [...s.nodeIds, nodeId],
+              };
+            }),
+          });
+        },
+
+        removeNodeFromCurrentStep: (nodeId: string) => {
+          const { activeStepId, isStepperActive, steps } = get();
+          if (!isStepperActive || !activeStepId) return;
+          set({
+            steps: steps.map(s => {
+              if (s.id !== activeStepId) return s;
+              return {
+                ...s,
+                canvasNodeIds: s.canvasNodeIds.filter(id => id !== nodeId),
+                nodeIds: s.nodeIds.filter(id => id !== nodeId),
+              };
+            }),
+          });
+        },
+
         // Inline step editing actions
         setEditingStepId: (id) => {
           if (id === null) {
@@ -895,6 +1122,7 @@ export const useCanvasStore = create<CanvasState>()(
             pendingShapeType: null,
           });
 
+          get().addNodeToCurrentStep(shapeId);
           return shapeId;
         },
 
@@ -961,11 +1189,15 @@ export const useCanvasStore = create<CanvasState>()(
 
         // Persistence actions
         exportData: () => {
-          const { nodes, edges, documents, folders, visualGroups, steps, viewport, viewMode } = get();
+          // Sync active scenario steps before exporting
+          get().syncActiveScenarioSteps();
+          const { nodes, edges, documents, folders, visualGroups, scenarios, baseSteps, steps, viewport, viewMode } = get();
+          // Export base steps (or current if no scenario active)
+          const exportSteps = baseSteps || steps;
           const exportObj = {
             version: 1,
             exportedAt: new Date().toISOString(),
-            data: { nodes, edges, documents, folders, visualGroups, steps, viewport, viewMode },
+            data: { nodes, edges, documents, folders, visualGroups, scenarios, steps: exportSteps, viewport, viewMode },
           };
           return JSON.stringify(exportObj, null, 2);
         },
@@ -979,13 +1211,27 @@ export const useCanvasStore = create<CanvasState>()(
               return { success: false, error: 'Invalid data format: missing nodes array' };
             }
 
+            // Migrate steps: fill canvasNodeIds if missing
+            const allNodeIds = (data.nodes as AppNode[]).map((n: AppNode) => n.id);
+            const migrateSteps = (steps: Step[]) =>
+              steps.map((s: Step) => ({
+                ...s,
+                canvasNodeIds: s.canvasNodeIds ?? [...allNodeIds],
+              }));
+            const migratedSteps = migrateSteps(data.steps || []);
+            const migratedScenarios = (data.scenarios || []).map((sc: Scenario) => ({
+              ...sc,
+              steps: migrateSteps(sc.steps || []),
+            }));
+
             set({
               nodes: data.nodes || [],
               edges: data.edges || [],
               documents: data.documents || [],
               folders: data.folders || [],
               visualGroups: data.visualGroups || [],
-              steps: data.steps || [],
+              scenarios: migratedScenarios,
+              steps: migratedSteps,
               viewport: data.viewport || { x: 0, y: 0, zoom: 1 },
               viewMode: data.viewMode || 'technical',
               // Reset selection state
@@ -1000,6 +1246,8 @@ export const useCanvasStore = create<CanvasState>()(
               editingStepOriginalNodeIds: [],
               editingStepOriginalNodePositions: null,
               preStepperPositions: null,
+              baseSteps: null,
+              activeScenarioId: null,
             });
 
             return { success: true };

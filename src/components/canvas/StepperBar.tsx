@@ -24,8 +24,12 @@ export function StepperBar() {
     editingStepId,
     setEditingStepId,
     createStep,
+    activeScenarioId,
+    scenarios,
+    setActiveScenario,
   } = useCanvasStore();
 
+  const activeScenario = activeScenarioId ? scenarios.find(s => s.id === activeScenarioId) : null;
   const sorted = [...steps].sort((a, b) => a.order - b.order);
   const activeIndex = sorted.findIndex(s => s.id === activeStepId);
   const isFirst = activeIndex <= 0;
@@ -74,6 +78,19 @@ export function StepperBar() {
     return (
       <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 px-6 py-2 z-40">
         <div className="flex items-center justify-center gap-3">
+          {activeScenario && (
+            <button
+              onClick={() => setActiveScenario(null)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium text-white flex-shrink-0 hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: activeScenario.color }}
+              title={t('fileTree.backToBase')}
+            >
+              <span className="truncate max-w-[100px]">{activeScenario.name}</span>
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
           <span className="text-xs text-gray-400">{t('stepper.noSteps')}</span>
           <button
             onClick={handleCreateAndEdit}
@@ -231,6 +248,24 @@ export function StepperBar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
           </svg>
         </button>
+
+        {/* Active scenario badge */}
+        {activeScenario && (
+          <>
+            <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mt-0.5" />
+            <button
+              onClick={() => setActiveScenario(null)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium text-white mt-0.5 flex-shrink-0 hover:opacity-80 transition-opacity"
+              style={{ backgroundColor: activeScenario.color }}
+              title={t('fileTree.backToBase')}
+            >
+              <span className="truncate max-w-[100px]">{activeScenario.name}</span>
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </>
+        )}
 
         {/* Разделитель */}
         <div className="w-px h-8 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mt-0.5" />

@@ -88,7 +88,8 @@ export interface Step {
   description: string;
   order: number;
   mode: StepMode;
-  nodeIds: string[];
+  nodeIds: string[];           // highlighted nodes (full brightness)
+  canvasNodeIds: string[];     // all nodes existing on this step's canvas
   nodePositions?: Record<string, { x: number; y: number }> | null;
   viewport?: { x: number; y: number; zoom: number } | null;
   createdAt: string;

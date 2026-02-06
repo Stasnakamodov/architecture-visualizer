@@ -70,6 +70,12 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
     updateVisualGroup,
     deleteVisualGroup,
     setActiveVisualGroup,
+    scenarios,
+    activeScenarioId,
+    createScenario,
+    updateScenario,
+    deleteScenario,
+    setActiveScenario,
     isSelectingForGroup,
     selectedForGroup,
     startGroupSelection,
@@ -90,14 +96,23 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
   const [editingTitle, setEditingTitle] = useState('');
   const [draggedDocId, setDraggedDocId] = useState<string | null>(null);
 
+  // Bottom panel tab: 'collections' or 'scenarios'
+  const [bottomTab, setBottomTab] = useState<'collections' | 'scenarios'>('collections');
+
   // Visual group creation
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+
+  // Scenario creation
+  const [isCreatingScenario, setIsCreatingScenario] = useState(false);
+  const [newScenarioName, setNewScenarioName] = useState('');
+  const [editingScenarioId, setEditingScenarioId] = useState<string | null>(null);
 
   // Modal state for creating groups
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [modalSelectedNodes, setModalSelectedNodes] = useState<Set<string>>(new Set());
   const [modalExpandedFolders, setModalExpandedFolders] = useState<Set<string>>(new Set());
+
 
   // Resizable sidebar width
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
@@ -1020,24 +1035,67 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
         }`} />
       </div>
 
-      {/* Visual Groups Section */}
+      {/* Bottom Section: Collections / Scenarios tabs */}
       <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col" style={{ height: isIconMode ? 'auto' : collectionsHeight }}>
-        {/* Header */}
-        <div className={`flex items-center border-b border-gray-100 dark:border-gray-800 flex-shrink-0 ${isIconMode ? 'flex-col p-3 gap-2' : 'p-2 justify-between'}`}>
-          {!isIconMode && <span className={`font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{t('fileTree.collections')}</span>}
-          <button
-            onClick={handleOpenGroupModal}
-            className={`transition-all hover:scale-105 ${isIconMode ? 'w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl flex items-center justify-center' : 'p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded'}`}
-            title={t('fileTree.createCollection')}
-          >
-            <svg className={`text-emerald-500 ${isIconMode ? 'w-5 h-5' : 'w-4 h-4 text-blue-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
+        {/* Tab Header */}
+        <div className={`flex items-center border-b border-gray-100 dark:border-gray-800 flex-shrink-0 ${isIconMode ? 'flex-col p-3 gap-2' : 'p-0'}`}>
+          {!isIconMode ? (
+            <div className="flex items-center w-full">
+              {/* Tab buttons */}
+              <button
+                onClick={() => setBottomTab('collections')}
+                className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                  bottomTab === 'collections'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                }`}
+              >
+                {t('fileTree.collections')}
+              </button>
+              <button
+                onClick={() => setBottomTab('scenarios')}
+                className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                  bottomTab === 'scenarios'
+                    ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                }`}
+              >
+                {t('fileTree.scenarios')}
+                {scenarios.length > 0 && (
+                  <span className="ml-1 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-1 rounded">
+                    {scenarios.length}
+                  </span>
+                )}
+              </button>
+              {/* Add button */}
+              <button
+                onClick={bottomTab === 'collections' ? handleOpenGroupModal : () => setIsCreatingScenario(true)}
+                className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-all hover:scale-105 mx-1"
+                title={bottomTab === 'collections' ? t('fileTree.createCollection') : t('fileTree.createScenario')}
+              >
+                <svg className={`w-4 h-4 ${bottomTab === 'collections' ? 'text-blue-500' : 'text-purple-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleOpenGroupModal}
+              className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+              title={t('fileTree.createCollection')}
+            >
+              <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          )}
         </div>
 
-        {/* Groups list */}
+        {/* Tab Content */}
         <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Collections tab */}
+          {bottomTab === 'collections' && (
+            <>
           {visualGroups.length === 0 ? (
             <div className={`text-gray-400 dark:text-gray-500 text-center italic ${isIconMode ? 'p-3 text-xs' : 'p-3 text-xs'}`}>
               {isIconMode ? '' : t('fileTree.noCollections')}
@@ -1135,10 +1193,123 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
               ))}
             </div>
           )}
+            </>
+          )}
+
+          {/* Scenarios tab */}
+          {bottomTab === 'scenarios' && (
+            <>
+              {/* Inline create scenario */}
+              {isCreatingScenario && (
+                <div className="p-2 border-b border-gray-100 dark:border-gray-800">
+                  <input
+                    type="text"
+                    value={newScenarioName}
+                    onChange={(e) => setNewScenarioName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newScenarioName.trim()) {
+                        createScenario(newScenarioName.trim());
+                        setNewScenarioName('');
+                        setIsCreatingScenario(false);
+                      }
+                      if (e.key === 'Escape') {
+                        setIsCreatingScenario(false);
+                        setNewScenarioName('');
+                      }
+                    }}
+                    placeholder={t('fileTree.enterScenarioName')}
+                    className="w-full px-2 py-1.5 text-sm bg-white dark:bg-gray-900 border border-purple-300 dark:border-purple-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-gray-900 dark:text-gray-100"
+                    autoFocus
+                  />
+                </div>
+              )}
+
+              {scenarios.length === 0 && !isCreatingScenario ? (
+                <div className="text-gray-400 dark:text-gray-500 text-center italic p-3 text-xs">
+                  {t('fileTree.noScenarios')}
+                </div>
+              ) : (
+                <div className="p-1 space-y-0.5">
+                  {scenarios.map((scenario) => (
+                    <div
+                      key={scenario.id}
+                      className={`group flex items-center cursor-pointer transition-all rounded-lg gap-2 px-2 py-1.5 ${
+                        activeScenarioId === scenario.id
+                          ? 'bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-400 ring-offset-1 dark:ring-offset-gray-900'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                      onClick={() => setActiveScenario(activeScenarioId === scenario.id ? null : scenario.id)}
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: scenario.color }}
+                      />
+                      {editingScenarioId === scenario.id ? (
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onBlur={() => {
+                            if (editingTitle.trim()) {
+                              updateScenario(scenario.id, { name: editingTitle.trim() });
+                            }
+                            setEditingScenarioId(null);
+                            setEditingTitle('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              if (editingTitle.trim()) {
+                                updateScenario(scenario.id, { name: editingTitle.trim() });
+                              }
+                              setEditingScenarioId(null);
+                              setEditingTitle('');
+                            }
+                            if (e.key === 'Escape') {
+                              setEditingScenarioId(null);
+                              setEditingTitle('');
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-1 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-purple-500 text-gray-900 dark:text-gray-100"
+                          autoFocus
+                        />
+                      ) : (
+                        <>
+                          <span
+                            className="flex-1 text-sm truncate text-gray-700 dark:text-gray-300"
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setEditingScenarioId(scenario.id);
+                              setEditingTitle(scenario.name);
+                            }}
+                          >
+                            {scenario.name}
+                          </span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">{t('fileTree.scenarioSteps', { count: scenario.steps.length })}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteScenario(scenario.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-opacity"
+                            title={t('fileTree.deleteScenario')}
+                          >
+                            <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Active group indicator */}
-        {activeVisualGroupId && (
+        {bottomTab === 'collections' && activeVisualGroupId && (
           <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
             <button
               onClick={() => setActiveVisualGroup(null)}
@@ -1149,6 +1320,21 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
               {t('fileTree.showAll')}
+            </button>
+          </div>
+        )}
+
+        {/* Active scenario indicator */}
+        {bottomTab === 'scenarios' && activeScenarioId && (
+          <div className="p-2 border-t border-gray-100 dark:border-gray-800 bg-purple-50 dark:bg-purple-900/10 flex-shrink-0">
+            <button
+              onClick={() => setActiveScenario(null)}
+              className="w-full text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 flex items-center justify-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+              </svg>
+              {t('fileTree.backToBase')}
             </button>
           </div>
         )}
