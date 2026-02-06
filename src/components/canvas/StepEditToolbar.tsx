@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { useReactFlow } from '@xyflow/react';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useTranslation } from '@/i18n/context';
 
@@ -14,7 +15,9 @@ export function StepEditToolbar() {
     updateStep,
     cancelStepEditing,
     confirmStepEditing,
+    saveStepViewport,
   } = useCanvasStore();
+  const { getViewport } = useReactFlow();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +39,14 @@ export function StepEditToolbar() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [cancelStepEditing]);
+
+  const handleConfirm = useCallback(() => {
+    if (editingStepId) {
+      const vp = getViewport();
+      saveStepViewport(editingStepId, { x: vp.x, y: vp.y, zoom: vp.zoom });
+    }
+    confirmStepEditing();
+  }, [editingStepId, getViewport, saveStepViewport, confirmStepEditing]);
 
   if (!step || !editingStepId) return null;
 
@@ -87,7 +98,7 @@ export function StepEditToolbar() {
 
         {/* Done button */}
         <button
-          onClick={confirmStepEditing}
+          onClick={handleConfirm}
           className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
         >
           {t('stepEditor.doneEditing')}

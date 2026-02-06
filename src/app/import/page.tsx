@@ -136,6 +136,7 @@ export default function ImportPage() {
     // Load visualGroups from saved canvas (or clear if none)
     setVisualGroups(canvas.visualGroups || []);
     // Load steps from saved canvas (or clear if none)
+    console.log('[handleLoadCanvas] loading steps:', canvas.steps?.length ?? 0, canvas.steps?.map(s => ({ id: s.id, name: s.name, nodeIds: s.nodeIds.length })));
     setSteps(canvas.steps || []);
     setCurrentCanvas(canvas);
     setShowSavedCanvases(false);

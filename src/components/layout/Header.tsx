@@ -269,6 +269,19 @@ export function Header() {
                         </motion.button>
                       );
                     })}
+
+                    {/* Dashed "+" circle to create next step */}
+                    <motion.button
+                      onClick={handleCreateAndEdit}
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="relative z-10 w-6 h-6 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-500 hover:border-blue-400 dark:hover:border-blue-400 bg-white dark:bg-gray-800 flex items-center justify-center transition-colors outline-none flex-shrink-0"
+                      title={t('header.createSteps')}
+                    >
+                      <svg className="w-3 h-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </motion.button>
                   </div>
 
                   {/* Next arrow */}

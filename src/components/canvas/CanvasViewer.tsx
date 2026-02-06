@@ -132,7 +132,7 @@ function CanvasViewerInner({
   } = useCanvasStore();
 
   const reactFlow = useReactFlow();
-  const { setCenter, getNode, screenToFlowPosition, fitView: rfFitView } = reactFlow;
+  const { setCenter, setViewport: rfSetViewport, getNode, screenToFlowPosition, fitView: rfFitView } = reactFlow;
   const { undo, redo } = useTemporalStore();
   const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
@@ -151,6 +151,7 @@ function CanvasViewerInner({
   const prevStoreNodesLength = useRef(storeNodes.length);
   const hasRestoredFromStore = useRef(false);
   const isInitialLoad = useRef(true);
+  const isApplyingStepPositions = useRef(false);
 
   // Restore from persisted store after hydration
   useEffect(() => {
@@ -198,14 +199,51 @@ function CanvasViewerInner({
     }
   }, [selectedNodeId, setCenter, getNode, nodes]);
 
-  // Sync local nodes TO store
+  // Sync local nodes TO store (guarded to prevent loops during step position apply)
   useEffect(() => {
+    if (isApplyingStepPositions.current) return;
     setStoreNodes(nodes);
   }, [nodes, setStoreNodes]);
 
   useEffect(() => {
     setStoreEdges(edges);
   }, [edges, setStoreEdges]);
+
+  // Sync store node POSITIONS to React Flow local nodes (for step navigation)
+  const prevStoreNodePositionsRef = useRef<string>('');
+  useEffect(() => {
+    if (!isStepperActive) return;
+    // Build a position fingerprint to detect position-only changes from the store
+    const posFingerprint = storeNodes.map(n => `${n.id}:${n.position.x},${n.position.y}`).join('|');
+    if (posFingerprint === prevStoreNodePositionsRef.current) return;
+    prevStoreNodePositionsRef.current = posFingerprint;
+
+    // Check if any local node positions differ from store
+    let hasDiff = false;
+    for (const storeNode of storeNodes) {
+      const localNode = nodes.find(n => n.id === storeNode.id);
+      if (localNode && (localNode.position.x !== storeNode.position.x || localNode.position.y !== storeNode.position.y)) {
+        hasDiff = true;
+        break;
+      }
+    }
+    if (!hasDiff) return;
+
+    isApplyingStepPositions.current = true;
+    setNodes(currentNodes =>
+      currentNodes.map(node => {
+        const storeNode = storeNodes.find(n => n.id === node.id);
+        if (storeNode) {
+          return { ...node, position: { x: storeNode.position.x, y: storeNode.position.y } };
+        }
+        return node;
+      })
+    );
+    // Reset flag after React processes the update
+    requestAnimationFrame(() => {
+      isApplyingStepPositions.current = false;
+    });
+  }, [storeNodes, isStepperActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync node DATA changes FROM store (when edited via PropertyPanel/Modal)
   useEffect(() => {
@@ -284,12 +322,13 @@ function CanvasViewerInner({
     // Small delay to allow React Flow to process node changes
     const timer = setTimeout(() => {
       if (activeStep.viewport) {
-        setCenter(activeStep.viewport.x, activeStep.viewport.y, {
-          duration: 500,
-          zoom: activeStep.viewport.zoom,
-        });
+        // Restore exact viewport transform (pan + zoom) saved by getViewport()
+        rfSetViewport(
+          { x: activeStep.viewport.x, y: activeStep.viewport.y, zoom: activeStep.viewport.zoom },
+          { duration: 500 },
+        );
       } else if (activeStep.nodeIds.length > 0) {
-        // fitView on visible nodes
+        // No saved viewport — fit to visible nodes
         const visibleNodeIds = stepVisibleNodeIds;
         if (visibleNodeIds) {
           const visibleNodes = nodes.filter(n => visibleNodeIds.has(n.id));
@@ -305,7 +344,7 @@ function CanvasViewerInner({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [activeStepId, isStepperActive, steps, setCenter, rfFitView, nodes, stepVisibleNodeIds]);
+  }, [activeStepId, isStepperActive, steps, rfSetViewport, rfFitView, nodes, stepVisibleNodeIds]);
 
   // Filter nodes by view mode and mark selected, apply dimming for visual groups and stepper
   const filteredNodes = useMemo(() => {
@@ -327,6 +366,7 @@ function CanvasViewerInner({
             ...node.style,
             opacity: isInEditingStep ? 1 : 0.3,
             transition: 'opacity 0.3s ease, box-shadow 0.2s ease',
+            cursor: 'pointer',
             boxShadow: isInEditingStep
               ? '0 0 0 4px rgba(59, 130, 246, 0.5)'
               : undefined,
@@ -390,6 +430,32 @@ function CanvasViewerInner({
           ? edge.source === selectedNodeId || edge.target === selectedNodeId
           : false;
 
+        // Resolve edge colors based on node data.color (custom color)
+        const srcDataColor = (sourceNode?.data as Record<string, unknown>)?.color as string | undefined;
+        const tgtDataColor = (targetNode?.data as Record<string, unknown>)?.color as string | undefined;
+        const hasNodeColors = !!srcDataColor || !!tgtDataColor;
+
+
+        let edgeSourceColor: string;
+        let edgeTargetColor: string;
+        if (srcDataColor && tgtDataColor) {
+          // Both colored → gradient between the two
+          edgeSourceColor = srcDataColor;
+          edgeTargetColor = tgtDataColor;
+        } else if (srcDataColor) {
+          // Only source colored → solid source color
+          edgeSourceColor = srcDataColor;
+          edgeTargetColor = srcDataColor;
+        } else if (tgtDataColor) {
+          // Only target colored → solid target color
+          edgeSourceColor = tgtDataColor;
+          edgeTargetColor = tgtDataColor;
+        } else {
+          // Neither colored → fallback to type colors
+          edgeSourceColor = typeColors[sourceNode?.type || ''] || '#6366f1';
+          edgeTargetColor = typeColors[targetNode?.type || ''] || '#6366f1';
+        }
+
         // Inline step editing mode: override edge dimming
         if (editingStepNodeIds !== null) {
           const bothInStep = editingStepNodeIds.has(edge.source) && editingStepNodeIds.has(edge.target);
@@ -403,9 +469,9 @@ function CanvasViewerInner({
             },
             data: {
               ...edge.data,
-              sourceColor: typeColors[sourceNode?.type || ''] || '#6366f1',
-              targetColor: typeColors[targetNode?.type || ''] || '#6366f1',
-              showGradient: bothInStep,
+              sourceColor: edgeSourceColor,
+              targetColor: edgeTargetColor,
+              showGradient: bothInStep && hasNodeColors,
               usePresentationRouting,
             },
           };
@@ -428,8 +494,8 @@ function CanvasViewerInner({
           ? Math.min(stepOpacity, collectionOpacity)
           : 1;
 
-        // Determine if this edge should show gradient
-        const showGradient = isSelected || (activeGroupNodeIds !== null && isInActiveGroup);
+        // Determine if this edge should show gradient/color
+        const showGradient = hasNodeColors || isSelected || (activeGroupNodeIds !== null && isInActiveGroup);
 
         return {
           ...edge,
@@ -441,11 +507,9 @@ function CanvasViewerInner({
           },
           data: {
             ...edge.data,
-            // Pass node colors and gradient flag
-            sourceColor: typeColors[sourceNode?.type || ''] || '#6366f1',
-            targetColor: typeColors[targetNode?.type || ''] || '#6366f1',
+            sourceColor: edgeSourceColor,
+            targetColor: edgeTargetColor,
             showGradient: showGradient || false,
-            // Pass layout type for edge routing (forces re-render when layout changes)
             usePresentationRouting,
           },
         };

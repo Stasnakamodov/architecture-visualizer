@@ -86,9 +86,7 @@ body {
   background: #0a0a0a;
 }
 
-.dark .react-flow__edge-path {
-  stroke: #6b7280;
-}
+/* Custom edge colors are handled via inline styles in CustomEdge.tsx */
 
 .dark .react-flow__attribution {
   background: rgba(17, 24, 39, 0.7);

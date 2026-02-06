@@ -293,7 +293,6 @@ export function convertFolderToCanvas(
               edgeType: isBidirectional ? 'bidirectional' : 'arrow',
               label: edgeLabel,
             },
-            style: { stroke: '#94a3b8' },
           });
         }
       }

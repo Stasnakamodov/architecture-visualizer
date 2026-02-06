@@ -88,6 +88,10 @@ interface CanvasState {
   // Inline step editing
   editingStepId: string | null;
   editingStepOriginalNodeIds: string[];
+  editingStepOriginalNodePositions: Record<string, { x: number; y: number }> | null;
+
+  // Per-step positions: base snapshot before stepper activates
+  preStepperPositions: Record<string, { x: number; y: number }> | null;
 
   // Layout reset
   preLayoutPositions: Record<string, { x: number; y: number }> | null;
@@ -151,6 +155,8 @@ interface CanvasState {
   toggleStepper: (active?: boolean) => void;
   setEditingSteps: (editing: boolean) => void;
   saveStepViewport: (stepId: string, viewport: { x: number; y: number; zoom: number }) => void;
+  saveStepNodePositions: (stepId: string) => void;
+  applyStepNodePositions: (stepId: string) => void;
   getVisibleNodeIdsForStep: () => Set<string> | null;
 
   // Inline step editing actions
@@ -225,6 +231,9 @@ const initialState = {
   // Inline step editing
   editingStepId: null as string | null,
   editingStepOriginalNodeIds: [] as string[],
+  editingStepOriginalNodePositions: null as Record<string, { x: number; y: number }> | null,
+  // Per-step positions
+  preStepperPositions: null as Record<string, { x: number; y: number }> | null,
   // Layout reset
   preLayoutPositions: null as Record<string, { x: number; y: number }> | null,
   // Current layout type
@@ -274,6 +283,8 @@ export const useCanvasStore = create<CanvasState>()(
           isEditingSteps: false,
           editingStepId: null,
           editingStepOriginalNodeIds: [],
+          editingStepOriginalNodePositions: null,
+          preStepperPositions: null,
         }),
         createGroup: (label) => {
           const { nodes, selectedNodeIds, edges } = get();
@@ -563,15 +574,30 @@ export const useCanvasStore = create<CanvasState>()(
         setSteps: (steps) => set({ steps }),
 
         createStep: (name) => {
-          const { steps } = get();
+          const { steps, nodes } = get();
+          const sorted = [...steps].sort((a, b) => a.order - b.order);
+          const lastStep = sorted[sorted.length - 1];
           const stepId = `step-${Date.now()}`;
+          // Inherit positions from previous step, or snapshot current positions
+          let nodePositions: Record<string, { x: number; y: number }> | null = null;
+          if (lastStep?.nodePositions) {
+            nodePositions = { ...lastStep.nodePositions };
+          } else {
+            // Snapshot current canvas positions
+            const positions: Record<string, { x: number; y: number }> = {};
+            nodes.forEach((node) => {
+              positions[node.id] = { x: node.position.x, y: node.position.y };
+            });
+            nodePositions = positions;
+          }
           const newStep: Step = {
             id: stepId,
             name: name || `Step ${steps.length + 1}`,
             description: '',
             order: steps.length,
             mode: 'independent',
-            nodeIds: [],
+            nodeIds: lastStep ? [...lastStep.nodeIds] : [],
+            nodePositions,
             viewport: null,
             createdAt: new Date().toISOString(),
           };
@@ -608,7 +634,16 @@ export const useCanvasStore = create<CanvasState>()(
         },
 
         setActiveStep: (id) => {
+          const { activeStepId } = get();
+          // Save positions of current step before navigating away
+          if (activeStepId) {
+            get().saveStepNodePositions(activeStepId);
+          }
           set({ activeStepId: id });
+          // Apply positions of the new step
+          if (id) {
+            get().applyStepNodePositions(id);
+          }
           // Navigation does NOT markDirty
         },
 
@@ -618,7 +653,13 @@ export const useCanvasStore = create<CanvasState>()(
           const sorted = [...steps].sort((a, b) => a.order - b.order);
           const currentIndex = sorted.findIndex(s => s.id === activeStepId);
           const nextIndex = Math.min(currentIndex + 1, sorted.length - 1);
+          if (sorted[nextIndex].id === activeStepId) return;
+          // Save current step positions before navigating
+          if (activeStepId) {
+            get().saveStepNodePositions(activeStepId);
+          }
           set({ activeStepId: sorted[nextIndex].id });
+          get().applyStepNodePositions(sorted[nextIndex].id);
         },
 
         goToPrevStep: () => {
@@ -627,18 +668,62 @@ export const useCanvasStore = create<CanvasState>()(
           const sorted = [...steps].sort((a, b) => a.order - b.order);
           const currentIndex = sorted.findIndex(s => s.id === activeStepId);
           const prevIndex = Math.max(currentIndex - 1, 0);
+          if (sorted[prevIndex].id === activeStepId) return;
+          // Save current step positions before navigating
+          if (activeStepId) {
+            get().saveStepNodePositions(activeStepId);
+          }
           set({ activeStepId: sorted[prevIndex].id });
+          get().applyStepNodePositions(sorted[prevIndex].id);
         },
 
         toggleStepper: (active) => {
-          const { isStepperActive, steps } = get();
+          const { isStepperActive, steps, nodes, preStepperPositions, activeStepId } = get();
           const newActive = active !== undefined ? active : !isStepperActive;
-          set({
-            isStepperActive: newActive,
-            activeStepId: newActive && steps.length > 0
-              ? ([...steps].sort((a, b) => a.order - b.order)[0]?.id || null)
-              : null,
-          });
+
+          if (newActive) {
+            // Activating stepper: save base positions, then apply first step's positions
+            const positions: Record<string, { x: number; y: number }> = {};
+            nodes.forEach((node) => {
+              positions[node.id] = { x: node.position.x, y: node.position.y };
+            });
+            const sorted = [...steps].sort((a, b) => a.order - b.order);
+            const firstStepId = sorted[0]?.id || null;
+            set({
+              isStepperActive: true,
+              activeStepId: firstStepId,
+              preStepperPositions: positions,
+            });
+            if (firstStepId) {
+              get().applyStepNodePositions(firstStepId);
+            }
+          } else {
+            // Deactivating stepper: save current step positions, then restore base positions
+            if (activeStepId) {
+              get().saveStepNodePositions(activeStepId);
+            }
+            if (preStepperPositions) {
+              const currentNodes = get().nodes;
+              const restoredNodes = currentNodes.map((node) => {
+                const saved = preStepperPositions[node.id];
+                if (saved) {
+                  return { ...node, position: { x: saved.x, y: saved.y } };
+                }
+                return node;
+              });
+              set({
+                isStepperActive: false,
+                activeStepId: null,
+                nodes: restoredNodes,
+                preStepperPositions: null,
+              });
+            } else {
+              set({
+                isStepperActive: false,
+                activeStepId: null,
+              });
+            }
+          }
         },
 
         setEditingSteps: (editing) => {
@@ -651,6 +736,32 @@ export const useCanvasStore = create<CanvasState>()(
             steps: steps.map(s => s.id === stepId ? { ...s, viewport } : s),
           });
           get().markDirty();
+        },
+
+        saveStepNodePositions: (stepId) => {
+          const { nodes, steps } = get();
+          const positions: Record<string, { x: number; y: number }> = {};
+          nodes.forEach((node) => {
+            positions[node.id] = { x: node.position.x, y: node.position.y };
+          });
+          set({
+            steps: steps.map(s => s.id === stepId ? { ...s, nodePositions: positions } : s),
+          });
+        },
+
+        applyStepNodePositions: (stepId) => {
+          const { steps, nodes } = get();
+          const step = steps.find(s => s.id === stepId);
+          if (!step?.nodePositions) return;
+          const positions = step.nodePositions;
+          const updatedNodes = nodes.map((node) => {
+            const saved = positions[node.id];
+            if (saved) {
+              return { ...node, position: { x: saved.x, y: saved.y } };
+            }
+            return node;
+          });
+          set({ nodes: updatedNodes });
         },
 
         getVisibleNodeIdsForStep: () => {
@@ -677,7 +788,7 @@ export const useCanvasStore = create<CanvasState>()(
         // Inline step editing actions
         setEditingStepId: (id) => {
           if (id === null) {
-            set({ editingStepId: null, editingStepOriginalNodeIds: [] });
+            set({ editingStepId: null, editingStepOriginalNodeIds: [], editingStepOriginalNodePositions: null });
             return;
           }
           const { steps, isSelectingForGroup } = get();
@@ -686,6 +797,7 @@ export const useCanvasStore = create<CanvasState>()(
           set({
             editingStepId: id,
             editingStepOriginalNodeIds: [...step.nodeIds],
+            editingStepOriginalNodePositions: step.nodePositions ? { ...step.nodePositions } : null,
             isStepperActive: true,
             activeStepId: id,
             // Cancel group selection if active
@@ -711,19 +823,37 @@ export const useCanvasStore = create<CanvasState>()(
         },
 
         cancelStepEditing: () => {
-          const { editingStepId, editingStepOriginalNodeIds, steps } = get();
+          const { editingStepId, editingStepOriginalNodeIds, editingStepOriginalNodePositions, steps, nodes } = get();
           if (!editingStepId) return;
+          // Restore node positions if we had a backup
+          let restoredNodes = nodes;
+          if (editingStepOriginalNodePositions) {
+            restoredNodes = nodes.map((node) => {
+              const saved = editingStepOriginalNodePositions[node.id];
+              if (saved) {
+                return { ...node, position: { x: saved.x, y: saved.y } };
+              }
+              return node;
+            });
+          }
           set({
             steps: steps.map(s =>
-              s.id === editingStepId ? { ...s, nodeIds: editingStepOriginalNodeIds } : s
+              s.id === editingStepId ? { ...s, nodeIds: editingStepOriginalNodeIds, nodePositions: editingStepOriginalNodePositions } : s
             ),
+            nodes: restoredNodes,
             editingStepId: null,
             editingStepOriginalNodeIds: [],
+            editingStepOriginalNodePositions: null,
           });
         },
 
         confirmStepEditing: () => {
-          set({ editingStepId: null, editingStepOriginalNodeIds: [] });
+          const { editingStepId } = get();
+          if (editingStepId) {
+            // Capture current node positions into the step
+            get().saveStepNodePositions(editingStepId);
+          }
+          set({ editingStepId: null, editingStepOriginalNodeIds: [], editingStepOriginalNodePositions: null });
           get().markDirty();
         },
 
@@ -868,6 +998,8 @@ export const useCanvasStore = create<CanvasState>()(
               isEditingSteps: false,
               editingStepId: null,
               editingStepOriginalNodeIds: [],
+              editingStepOriginalNodePositions: null,
+              preStepperPositions: null,
             });
 
             return { success: true };

@@ -89,6 +89,7 @@ export interface Step {
   order: number;
   mode: StepMode;
   nodeIds: string[];
+  nodePositions?: Record<string, { x: number; y: number }> | null;
   viewport?: { x: number; y: number; zoom: number } | null;
   createdAt: string;
 }

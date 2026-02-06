@@ -11,6 +11,7 @@ import {
   calculatePresentationEdgePath,
   shouldUsePresentationRouting,
 } from '@/lib/layout';
+import { useCanvasStore } from '@/stores/canvasStore';
 
 export type EdgeType = 'default' | 'arrow' | 'bidirectional' | 'none';
 
@@ -41,6 +42,8 @@ const INACTIVE_COLOR = '#94a3b8';
 export const CustomEdge = memo(
   ({
     id,
+    source,
+    target,
     sourceX,
     sourceY,
     targetX,
@@ -48,8 +51,15 @@ export const CustomEdge = memo(
     sourcePosition,
     targetPosition,
     data,
-    selected,
   }: EdgeProps) => {
+    // Read node colors directly from store (bypasses React Flow data passing)
+    const srcNodeColor = useCanvasStore(
+      (state) => (state.nodes.find((n) => n.id === source)?.data as Record<string, unknown>)?.color as string | undefined
+    );
+    const tgtNodeColor = useCanvasStore(
+      (state) => (state.nodes.find((n) => n.id === target)?.data as Record<string, unknown>)?.color as string | undefined
+    );
+
     // Calculate edge path - use presentation routing if active
     const { edgePath, labelX, labelY } = useMemo(() => {
       if (shouldUsePresentationRouting()) {
@@ -84,16 +94,37 @@ export const CustomEdge = memo(
     const edgeType = edgeData?.edgeType || 'arrow';
     const lineStyle = edgeData?.lineStyle;
     const label = edgeData?.label;
-    const showGradient = edgeData?.showGradient || false;
 
-    // Colors for gradient
-    const sourceColor = edgeData?.sourceColor || '#6366f1';
-    const targetColor = edgeData?.targetColor || '#6366f1';
+    // Determine colors: node data.color takes priority, then data prop fallback
+    const hasNodeColors = !!srcNodeColor || !!tgtNodeColor;
 
-    // Unique IDs for this edge
-    const gradientId = `edge-gradient-${id}`;
-    const markerId = `edge-marker-${id}`;
-    const markerStartId = `edge-marker-start-${id}`;
+    let sourceColor: string;
+    let targetColor: string;
+    if (srcNodeColor && tgtNodeColor) {
+      sourceColor = srcNodeColor;
+      targetColor = tgtNodeColor;
+    } else if (srcNodeColor) {
+      sourceColor = srcNodeColor;
+      targetColor = srcNodeColor;
+    } else if (tgtNodeColor) {
+      sourceColor = tgtNodeColor;
+      targetColor = tgtNodeColor;
+    } else {
+      sourceColor = edgeData?.sourceColor || '#6366f1';
+      targetColor = edgeData?.targetColor || '#6366f1';
+    }
+
+    // showGradient: true when nodes have colors, or from data prop (selection/group)
+    const showGradient = hasNodeColors || (edgeData?.showGradient || false);
+
+    // SVG-safe ID for defs references (edge IDs may contain spaces, Cyrillic, emoji, ">")
+    const safeId = useMemo(
+      () => Array.from(id).map(c => /[a-zA-Z0-9_-]/.test(c) ? c : (c.codePointAt(0) || 0).toString(16)).join(''),
+      [id]
+    );
+    const gradientId = `eg-${safeId}`;
+    const markerId = `em-${safeId}`;
+    const markerStartId = `ems-${safeId}`;
 
     // Visual styling based on state
     const strokeWidth = showGradient ? 2.5 : 1.5;
@@ -107,21 +138,29 @@ export const CustomEdge = memo(
     const markerEndColor = showGradient ? targetColor : INACTIVE_COLOR;
     const markerStartColor = showGradient ? sourceColor : INACTIVE_COLOR;
 
+    // Use SVG gradient when two different colors, direct color otherwise
+    const useGradientStroke = showGradient && sourceColor !== targetColor;
+    const strokeColor = showGradient
+      ? (useGradientStroke ? `url(#${gradientId})` : sourceColor)
+      : INACTIVE_COLOR;
+
     return (
       <>
         <defs>
-          {/* Gradient from source to target color */}
-          <linearGradient
-            id={gradientId}
-            x1={sourceX}
-            y1={sourceY}
-            x2={targetX}
-            y2={targetY}
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%" stopColor={sourceColor} />
-            <stop offset="100%" stopColor={targetColor} />
-          </linearGradient>
+          {/* Linear gradient along the edge: source color → target color */}
+          {useGradientStroke && (
+            <linearGradient
+              id={gradientId}
+              x1={sourceX}
+              y1={sourceY}
+              x2={targetX}
+              y2={targetY}
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stopColor={sourceColor} />
+              <stop offset="100%" stopColor={targetColor} />
+            </linearGradient>
+          )}
 
           {/* Arrow marker for end */}
           <marker
@@ -156,19 +195,18 @@ export const CustomEdge = memo(
           </marker>
         </defs>
 
-        {/* Edge path - colored when active, gray when inactive */}
+        {/* Edge path — no react-flow__edge-path class to avoid CSS stroke override */}
         <path
           id={id}
-          className="react-flow__edge-path"
           d={edgePath}
           fill="none"
-          stroke={showGradient ? sourceColor : INACTIVE_COLOR}
-          strokeWidth={strokeWidth}
-          strokeOpacity={strokeOpacity}
-          strokeDasharray={getStrokeDasharray(lineStyle)}
+          stroke={strokeColor}
           markerEnd={showEndMarker ? `url(#${markerId})` : undefined}
           markerStart={showStartMarker ? `url(#${markerStartId})` : undefined}
           style={{
+            strokeWidth,
+            strokeOpacity,
+            strokeDasharray: getStrokeDasharray(lineStyle),
             transition: 'stroke-width 0.2s ease, stroke-opacity 0.2s ease, stroke 0.2s ease',
           }}
         />

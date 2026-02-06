@@ -36,6 +36,9 @@ export function SaveDialog({
   const handleSave = () => {
     const trimmedName = name.trim() || 'Untitled Canvas';
 
+    const stepsToSave = steps.length > 0 ? steps : undefined;
+    console.log('[SaveDialog] saving steps:', stepsToSave?.length ?? 0, 'steps', stepsToSave?.map(s => ({ id: s.id, name: s.name, nodeIds: s.nodeIds.length })));
+
     let saved: SavedCanvas | null;
 
     if (existingCanvas && !saveAsNew) {
@@ -46,7 +49,7 @@ export function SaveDialog({
         edges,
         viewport,
         visualGroups,
-        steps: steps.length > 0 ? steps : undefined,
+        steps: stepsToSave,
       });
     } else {
       // Save as new
@@ -56,11 +59,12 @@ export function SaveDialog({
         edges,
         viewport,
         visualGroups,
-        steps: steps.length > 0 ? steps : undefined,
+        steps: stepsToSave,
       });
     }
 
     if (saved) {
+      console.log('[SaveDialog] saved canvas steps:', saved.steps?.length ?? 0);
       // Mark as clean (no unsaved changes)
       markClean();
       onSave(saved);

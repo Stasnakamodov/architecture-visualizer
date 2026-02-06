@@ -2,6 +2,7 @@
 
 import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps, type Node } from '@xyflow/react';
+import { useTheme } from 'next-themes';
 import { useCanvasStore } from '@/stores/canvasStore';
 import type { ShapeNodeData } from '@/types/canvas';
 
@@ -19,13 +20,24 @@ export const SHAPE_COLORS = [
   '#ec4899', // pink
 ];
 
+// Default fill colors per theme — used to detect "default" fill and adapt to theme
+const LIGHT_DEFAULT_FILL = '#ffffff';
+const DARK_DEFAULT_FILL = '#1f2937'; // gray-800
+
 export const ShapeNode = memo(({ data, selected, id }: NodeProps<ShapeNodeType>) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(data.label);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const updateShapeProperties = useCanvasStore((state) => state.updateShapeProperties);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
-  const { shapeType, fillColor, borderColor, borderStyle, width, height } = data;
+  const { shapeType, fillColor: rawFillColor, borderColor, borderStyle, width, height } = data;
+
+  // Adapt default white fill to dark theme
+  const fillColor = (rawFillColor === LIGHT_DEFAULT_FILL && isDark) ? DARK_DEFAULT_FILL
+    : (rawFillColor === DARK_DEFAULT_FILL && !isDark) ? LIGHT_DEFAULT_FILL
+    : rawFillColor;
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -78,7 +90,7 @@ export const ShapeNode = memo(({ data, selected, id }: NodeProps<ShapeNodeType>)
   };
 
   // Common handle styles
-  const handleClass = `!w-2 !h-2 !border-white`;
+  const handleClass = `!w-2 !h-2 !border-white dark:!border-gray-900`;
   const handleStyle = { backgroundColor: borderColor };
 
   // Render content (label + editing)
@@ -91,7 +103,7 @@ export const ShapeNode = memo(({ data, selected, id }: NodeProps<ShapeNodeType>)
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="w-full h-full text-sm font-medium resize-none border-none outline-none bg-transparent text-center"
+          className="w-full h-full text-sm font-medium resize-none border-none outline-none bg-transparent text-center text-gray-900 dark:text-gray-100"
           style={{ minHeight: '20px' }}
         />
       );
@@ -116,7 +128,7 @@ export const ShapeNode = memo(({ data, selected, id }: NodeProps<ShapeNodeType>)
   const wrapperClass = `
     flex items-center justify-center h-full w-full
     transition-all duration-200
-    ${selected ? 'ring-2 ring-blue-400 ring-offset-2' : ''}
+    ${selected ? 'ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-gray-900' : ''}
   `;
 
   // Render shape based on type
@@ -157,7 +169,7 @@ export const ShapeNode = memo(({ data, selected, id }: NodeProps<ShapeNodeType>)
           <div className="relative w-full h-full" onDoubleClick={handleDoubleClick}>
             {/* Diamond shape using CSS transform */}
             <div
-              className={`absolute inset-[15%] transform rotate-45 ${selected ? 'ring-2 ring-blue-400' : ''}`}
+              className={`absolute inset-[15%] transform rotate-45 ${selected ? 'ring-2 ring-blue-400 dark:ring-offset-gray-900' : ''}`}
               style={{
                 backgroundColor: fillColor,
                 border: getBorderStyleCSS(),
