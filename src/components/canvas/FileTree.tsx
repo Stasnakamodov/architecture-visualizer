@@ -83,10 +83,15 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
     editingStepId,
     toggleNodeInStep,
     steps,
+    edges,
     updateStep,
+    setNodes,
+    markDirty,
+    importAISteps,
+    importAIScenarios,
   } = useCanvasStore();
 
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['documents', 'all']));
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -98,6 +103,11 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
 
   // Bottom panel tab: 'collections' or 'scenarios'
   const [bottomTab, setBottomTab] = useState<'collections' | 'scenarios'>('collections');
+
+  // AI state
+  const [aiLoading, setAiLoading] = useState<string | null>(null); // 'steps' | 'scenarios' | 'describe' | null
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiDescribeProgress, setAiDescribeProgress] = useState<string | null>(null);
 
   // Visual group creation
   const [newGroupName, setNewGroupName] = useState('');
@@ -118,6 +128,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isHoveringSidebarHandle, setIsHoveringSidebarHandle] = useState(false);
+  const sidebarDidDrag = useRef(false);
   const sidebarStartX = useRef(0);
   const sidebarStartWidth = useRef(0);
 
@@ -145,13 +156,21 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
     return () => clearTimeout(timer);
   }, [sidebarWidth, isResizingSidebar]);
 
+  const COLLAPSE_WIDTH_THRESHOLD = 40;
+
   const handleSidebarResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     sidebarStartX.current = e.clientX;
     sidebarStartWidth.current = sidebarWidth;
+    sidebarDidDrag.current = false;
     setIsResizingSidebar(true);
   }, [sidebarWidth]);
+
+  const handleSidebarHandleClick = useCallback(() => {
+    if (sidebarDidDrag.current) return;
+    onToggleCollapse?.();
+  }, [onToggleCollapse]);
 
   useEffect(() => {
     if (!isResizingSidebar) return;
@@ -160,15 +179,31 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
     document.body.style.userSelect = 'none';
 
     const handleMouseMove = (e: MouseEvent) => {
+      sidebarDidDrag.current = true;
       const delta = e.clientX - sidebarStartX.current;
-      const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, sidebarStartWidth.current + delta));
-      setSidebarWidth(newWidth);
+      const rawWidth = sidebarStartWidth.current + delta;
+
+      if (rawWidth < COLLAPSE_WIDTH_THRESHOLD) {
+        // Will collapse on mouseUp
+      } else {
+        const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, rawWidth));
+        setSidebarWidth(newWidth);
+      }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
       setIsResizingSidebar(false);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+
+      // Collapse if dragged below threshold
+      if (sidebarDidDrag.current) {
+        const delta = e.clientX - sidebarStartX.current;
+        const rawWidth = sidebarStartWidth.current + delta;
+        if (rawWidth < COLLAPSE_WIDTH_THRESHOLD) {
+          onToggleCollapse?.();
+        }
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -180,11 +215,13 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [isResizingSidebar]);
+  }, [isResizingSidebar, onToggleCollapse]);
 
   // Resizable collections section
   const [collectionsHeight, setCollectionsHeight] = useState(160); // Default ~max-h-40
   const [isDraggingDivider, setIsDraggingDivider] = useState(false);
+  const [isBottomCollapsed, setIsBottomCollapsed] = useState(false);
+  const savedHeightRef = useRef(160);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef(0);
   const dragStartHeight = useRef(0);
@@ -192,30 +229,52 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
   const MIN_COLLECTIONS_HEIGHT = 100;
   const MAX_COLLECTIONS_RATIO = 0.6; // 60% of panel height
 
+  const dividerDidDrag = useRef(false);
+
   const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDraggingDivider(true);
+    dividerDidDrag.current = false;
     dragStartY.current = e.clientY;
-    dragStartHeight.current = collectionsHeight;
-  }, [collectionsHeight]);
+    dragStartHeight.current = isBottomCollapsed ? 0 : collectionsHeight;
+  }, [collectionsHeight, isBottomCollapsed]);
+
+  const handleDividerClick = useCallback(() => {
+    if (dividerDidDrag.current) return; // ignore click after drag
+    if (isBottomCollapsed) {
+      setIsBottomCollapsed(false);
+      setCollectionsHeight(savedHeightRef.current);
+    } else {
+      savedHeightRef.current = collectionsHeight;
+      setIsBottomCollapsed(true);
+    }
+  }, [isBottomCollapsed, collectionsHeight]);
 
   useEffect(() => {
     if (!isDraggingDivider) return;
 
+    const COLLAPSE_THRESHOLD = 50;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
+      dividerDidDrag.current = true;
 
       const containerRect = containerRef.current.getBoundingClientRect();
       const maxHeight = containerRect.height * MAX_COLLECTIONS_RATIO;
 
       // Moving up increases collections height, moving down decreases it
       const deltaY = dragStartY.current - e.clientY;
-      const newHeight = Math.min(
-        maxHeight,
-        Math.max(MIN_COLLECTIONS_HEIGHT, dragStartHeight.current + deltaY)
-      );
+      const rawHeight = dragStartHeight.current + deltaY;
 
-      setCollectionsHeight(newHeight);
+      if (rawHeight < COLLAPSE_THRESHOLD) {
+        setIsBottomCollapsed(true);
+        setCollectionsHeight(MIN_COLLECTIONS_HEIGHT);
+      } else {
+        setIsBottomCollapsed(false);
+        const newHeight = Math.min(maxHeight, Math.max(MIN_COLLECTIONS_HEIGHT, rawHeight));
+        setCollectionsHeight(newHeight);
+        savedHeightRef.current = newHeight;
+      }
     };
 
     const handleMouseUp = () => {
@@ -1024,27 +1083,34 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
 
       {/* Resizable Divider */}
       <div
-        className={`relative h-1.5 bg-gray-200 dark:bg-gray-700 cursor-ns-resize group flex-shrink-0 ${
+        className={`relative h-2 bg-gray-200 dark:bg-gray-700 cursor-ns-resize group flex-shrink-0 ${
           isDraggingDivider ? 'bg-blue-400' : 'hover:bg-blue-300'
         }`}
         onMouseDown={handleDividerMouseDown}
+        onClick={handleDividerClick}
       >
-        {/* Visual handle indicator */}
-        <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-1 rounded-full transition-colors ${
-          isDraggingDivider ? 'bg-blue-600' : 'bg-gray-400 dark:bg-gray-500 group-hover:bg-blue-500'
-        }`} />
+        {/* Chevron indicator */}
+        <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 transition-colors ${
+          isDraggingDivider ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500 group-hover:text-blue-500'
+        }`}>
+          <div className="w-6 h-0.5 rounded-full bg-current" />
+          <svg className={`w-3 h-3 transition-transform ${isBottomCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+          </svg>
+          <div className="w-6 h-0.5 rounded-full bg-current" />
+        </div>
       </div>
 
       {/* Bottom Section: Collections / Scenarios tabs */}
-      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col" style={{ height: isIconMode ? 'auto' : collectionsHeight }}>
+      <div className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col ${isBottomCollapsed ? '' : ''}`} style={{ height: isBottomCollapsed ? 0 : (isIconMode ? 'auto' : collectionsHeight), overflow: isBottomCollapsed ? 'hidden' : undefined }}>
         {/* Tab Header */}
         <div className={`flex items-center border-b border-gray-100 dark:border-gray-800 flex-shrink-0 ${isIconMode ? 'flex-col p-3 gap-2' : 'p-0'}`}>
           {!isIconMode ? (
-            <div className="flex items-center w-full">
+            <div className="flex items-center w-full overflow-hidden min-w-0">
               {/* Tab buttons */}
               <button
                 onClick={() => setBottomTab('collections')}
-                className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                className={`flex-1 min-w-0 px-1 py-2 text-[10px] font-semibold uppercase truncate transition-colors ${
                   bottomTab === 'collections'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
@@ -1054,7 +1120,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
               </button>
               <button
                 onClick={() => setBottomTab('scenarios')}
-                className={`flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                className={`flex-1 min-w-0 px-1 py-2 text-[10px] font-semibold uppercase truncate transition-colors ${
                   bottomTab === 'scenarios'
                     ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
@@ -1070,7 +1136,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
               {/* Add button */}
               <button
                 onClick={bottomTab === 'collections' ? handleOpenGroupModal : () => setIsCreatingScenario(true)}
-                className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-all hover:scale-105 mx-1"
+                className="flex-shrink-0 p-1 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-all hover:scale-105"
                 title={bottomTab === 'collections' ? t('fileTree.createCollection') : t('fileTree.createScenario')}
               >
                 <svg className={`w-4 h-4 ${bottomTab === 'collections' ? 'text-blue-500' : 'text-purple-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1196,6 +1262,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
             </>
           )}
 
+          {/* AI tab */}
           {/* Scenarios tab */}
           {bottomTab === 'scenarios' && (
             <>
@@ -1564,6 +1631,7 @@ export function FileTree({ onNodeSelect, onDocumentSelect, onAddToCanvas, isColl
       {/* Right edge resize handle */}
       <div
         onMouseDown={handleSidebarResizeStart}
+        onClick={handleSidebarHandleClick}
         onMouseEnter={() => setIsHoveringSidebarHandle(true)}
         onMouseLeave={() => setIsHoveringSidebarHandle(false)}
         className="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize z-20 group"

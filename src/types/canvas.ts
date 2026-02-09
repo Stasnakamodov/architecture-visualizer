@@ -95,6 +95,48 @@ export interface Step {
   createdAt: string;
 }
 
+// Presentation types
+export interface PresentationStepNotes {
+  caption: string;
+  speakerNotes: string;
+}
+
+// Sub-slide: unit of navigation in presentation
+export interface SubSlide {
+  type: 'overview' | 'node' | 'title';
+  stepId: string;
+  scenarioId: string;
+  nodeId?: string;              // For type === 'node': node to zoom into
+  scenarioName?: string;        // For type === 'title'
+  scenarioDescription?: string; // For type === 'title'
+}
+
+// Branch point: node with multiple outgoing edges
+export interface BranchPoint {
+  sourceNodeId: string;
+  targetNodeIds: string[];
+  targetLabels: string[];
+}
+
+// Recorded path for public version (linear playback)
+export interface RecordedPath {
+  subSlideSequence: SubSlide[];
+  recordedAt: string;
+}
+
+export interface Presentation {
+  id: string;
+  name: string;
+  scenarioIds: string[];
+  settings: { autoplay: boolean; autoplayInterval: 5000 | 10000 | 15000 };
+  notes: Record<string, PresentationStepNotes>; // key: "scenarioId:stepId" or "scenarioId:stepId:nodeId"
+  recordedPath?: RecordedPath | null;
+  publicSlug: string | null;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // View modes
 export type ViewMode = 'technical' | 'executive';
 

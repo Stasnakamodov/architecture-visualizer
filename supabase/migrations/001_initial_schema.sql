@@ -1,4 +1,4 @@
--- Architecture Visualizer Database Schema
+-- VatmanPro Database Schema
 -- Run this SQL in your Supabase SQL Editor
 
 -- Enable UUID extension

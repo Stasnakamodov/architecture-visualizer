@@ -5,7 +5,8 @@ import { motion } from 'framer-motion';
 import { saveCanvas, updateCanvas, type SavedCanvas, type VisualGroup } from '@/lib/storage/localStorage';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useTranslation } from '@/i18n/context';
-import type { AppNode, AppEdge, Step } from '@/types/canvas';
+import type { AppNode, AppEdge, Step, Presentation } from '@/types/canvas';
+import type { Scenario } from '@/stores/canvasStore';
 
 interface SaveDialogProps {
   nodes: AppNode[];
@@ -13,6 +14,8 @@ interface SaveDialogProps {
   viewport: { x: number; y: number; zoom: number };
   visualGroups?: VisualGroup[];
   steps?: Step[];
+  scenarios?: Scenario[];
+  presentations?: Presentation[];
   existingCanvas?: SavedCanvas | null;
   onSave: (canvas: SavedCanvas) => void;
   onClose: () => void;
@@ -24,6 +27,8 @@ export function SaveDialog({
   viewport,
   visualGroups = [],
   steps = [],
+  scenarios = [],
+  presentations = [],
   existingCanvas,
   onSave,
   onClose,
@@ -37,7 +42,9 @@ export function SaveDialog({
     const trimmedName = name.trim() || 'Untitled Canvas';
 
     const stepsToSave = steps.length > 0 ? steps : undefined;
-    console.log('[SaveDialog] saving steps:', stepsToSave?.length ?? 0, 'steps', stepsToSave?.map(s => ({ id: s.id, name: s.name, nodeIds: s.nodeIds.length })));
+    const scenariosToSave = scenarios.length > 0 ? scenarios : undefined;
+    const presentationsToSave = presentations.length > 0 ? presentations : undefined;
+    console.log('[SaveDialog] saving steps:', stepsToSave?.length ?? 0, 'scenarios:', scenariosToSave?.length ?? 0, 'presentations:', presentationsToSave?.length ?? 0);
 
     let saved: SavedCanvas | null;
 
@@ -50,6 +57,8 @@ export function SaveDialog({
         viewport,
         visualGroups,
         steps: stepsToSave,
+        scenarios: scenariosToSave,
+        presentations: presentationsToSave,
       });
     } else {
       // Save as new
@@ -60,6 +69,8 @@ export function SaveDialog({
         viewport,
         visualGroups,
         steps: stepsToSave,
+        scenarios: scenariosToSave,
+        presentations: presentationsToSave,
       });
     }
 

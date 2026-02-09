@@ -46,7 +46,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${project.name} | Architecture Visualizer`,
+    title: `${project.name} | VatmanPro`,
     description: project.description,
   };
 }

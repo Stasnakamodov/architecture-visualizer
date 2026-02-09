@@ -27,6 +27,7 @@ export function StepperBar() {
     activeScenarioId,
     scenarios,
     setActiveScenario,
+    nodes,
   } = useCanvasStore();
 
   const activeScenario = activeScenarioId ? scenarios.find(s => s.id === activeScenarioId) : null;
@@ -101,6 +102,18 @@ export function StepperBar() {
             </svg>
             {t('stepper.createFirst')}
           </button>
+          {nodes.length > 0 && (
+            <button
+              onClick={() => setEditingSteps(true)}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-md transition-colors"
+              title={t('ai.autoGenerate')}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              AI
+            </button>
+          )}
         </div>
       </div>
     );

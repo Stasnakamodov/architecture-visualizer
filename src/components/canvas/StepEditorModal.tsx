@@ -9,6 +9,7 @@ export function StepEditorModal() {
   const {
     steps,
     nodes,
+    edges,
     viewport,
     isEditingSteps,
     setEditingSteps,
@@ -20,10 +21,15 @@ export function StepEditorModal() {
     toggleStepper,
     setActiveStep,
     setEditingStepId,
+    importAISteps,
+    importAIScenarios,
   } = useCanvasStore();
 
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [showAiMenu, setShowAiMenu] = useState(false);
 
   // Reset selectedStepId when modal opens or steps change
   useEffect(() => {
@@ -65,6 +71,34 @@ export function StepEditorModal() {
     if (!selectedStepId) return;
     setEditingSteps(false);
     setEditingStepId(selectedStepId);
+  };
+
+  const handleAIGenerate = async (mode: 'steps' | 'scenarios') => {
+    if (nodes.length === 0 || aiLoading) return;
+    setAiLoading(true);
+    setAiError(null);
+    setShowAiMenu(false);
+
+    try {
+      const res = await fetch('/api/ai/stepper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes, edges, mode, locale }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate');
+
+      if (mode === 'scenarios' && data.scenarios) {
+        importAIScenarios(data.scenarios);
+      } else if (data.steps) {
+        importAISteps(data.steps);
+        setSelectedStepId(data.steps[0]?.id || null);
+      }
+    } catch (err: any) {
+      setAiError(err.message || t('ai.error'));
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleSaveViewport = () => {
@@ -297,7 +331,50 @@ export function StepEditorModal() {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+          <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <div className="relative">
+              <button
+                onClick={() => setShowAiMenu(!showAiMenu)}
+                disabled={aiLoading || nodes.length === 0}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {aiLoading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    {t('ai.analyzing')}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    {t('ai.autoGenerate')}
+                  </>
+                )}
+              </button>
+              {showAiMenu && (
+                <div className="absolute bottom-full left-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-10">
+                  <button
+                    onClick={() => handleAIGenerate('steps')}
+                    className="w-full px-4 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                  >
+                    {t('ai.generateSteps')}
+                  </button>
+                  <button
+                    onClick={() => handleAIGenerate('scenarios')}
+                    className="w-full px-4 py-2.5 text-sm text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors border-t border-gray-100 dark:border-gray-700"
+                  >
+                    {t('ai.generateScenarios')}
+                  </button>
+                </div>
+              )}
+              {aiError && (
+                <p className="absolute top-full left-0 mt-1 text-xs text-red-500 whitespace-nowrap">{aiError}</p>
+              )}
+            </div>
             <button
               onClick={handleClose}
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium text-sm"

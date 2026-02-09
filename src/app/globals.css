@@ -95,3 +95,41 @@ body {
 .dark .react-flow__attribution a {
   color: #9ca3af;
 }
+
+/* Force text wrapping for all Markdown content in AI chat */
+.chat-scrollbar .prose,
+.chat-scrollbar .prose * {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  min-width: 0 !important;
+}
+.chat-scrollbar .prose table {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+/* Visible scrollbar for AI chat */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.45) rgba(0, 0, 0, 0.05);
+}
+.chat-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 92, 246, 0.45);
+  border-radius: 4px;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(139, 92, 246, 0.65);
+}
+.dark .chat-scrollbar {
+  scrollbar-color: rgba(139, 92, 246, 0.4) rgba(255, 255, 255, 0.05);
+}
+.dark .chat-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}

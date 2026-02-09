@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useTranslation } from '@/i18n/context';
 import type { AppNode, ShapeNodeData, CommentNodeData, BorderStyle } from '@/types/canvas';
+import { AIChatPanel } from './AIChatPanel';
+import { PresentationPanel } from './PresentationPanel';
 
 interface PropertyPanelProps {
   className?: string;
@@ -56,11 +59,15 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
   const hasActions = onShowSaved || onClose;
   const {
     nodes,
+    edges,
     selectedNodeId,
     updateShapeProperties,
     setNodes,
     markDirty,
   } = useCanvasStore();
+  const { t, locale } = useTranslation();
+  const [aiDescribing, setAiDescribing] = useState(false);
+  const [panelTab, setPanelTab] = useState<'properties' | 'ai' | 'presentation'>('properties');
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const isShape = selectedNode?.type === 'shape';
@@ -293,23 +300,128 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
     </div>
   );
 
+  // Tab bar: switches between Properties and AI
+  const TabBar = !isIconMode ? (
+    <div className={`flex border-b border-gray-200 dark:border-gray-700 ${isCompactMode ? 'px-1' : 'px-2'}`}>
+      <button
+        onClick={() => setPanelTab('properties')}
+        className={`flex-1 py-1.5 text-center font-medium transition-colors ${isCompactMode ? 'text-[10px]' : 'text-xs'} ${
+          panelTab === 'properties'
+            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+        }`}
+      >
+        {t('ai.properties')}
+      </button>
+      <button
+        onClick={() => setPanelTab('ai')}
+        className={`flex-1 py-1.5 text-center font-medium transition-colors ${isCompactMode ? 'text-[10px]' : 'text-xs'} ${
+          panelTab === 'ai'
+            ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-600 dark:border-purple-400'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+        }`}
+      >
+        <span className="flex items-center justify-center gap-1">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          {t('ai.startCreating')}
+        </span>
+      </button>
+      <button
+        onClick={() => setPanelTab('presentation')}
+        className={`flex-1 py-1.5 text-center font-medium transition-colors ${isCompactMode ? 'text-[10px]' : 'text-xs'} ${
+          panelTab === 'presentation'
+            ? 'text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600 dark:border-emerald-400'
+            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+        }`}
+      >
+        <span className="flex items-center justify-center gap-1">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+          </svg>
+          {t('presentation.title')}
+        </span>
+      </button>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700">
+      <button
+        onClick={() => setPanelTab('properties')}
+        className={`w-10 h-8 rounded-lg flex items-center justify-center transition-colors ${
+          panelTab === 'properties'
+            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+        }`}
+        title={t('ai.properties')}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        </svg>
+      </button>
+      <button
+        onClick={() => setPanelTab('ai')}
+        className={`w-10 h-8 rounded-lg flex items-center justify-center transition-colors ${
+          panelTab === 'ai'
+            ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+        }`}
+        title={t('ai.startCreating')}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </button>
+      <button
+        onClick={() => setPanelTab('presentation')}
+        className={`w-10 h-8 rounded-lg flex items-center justify-center transition-colors ${
+          panelTab === 'presentation'
+            ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+        }`}
+        title={t('presentation.title')}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+        </svg>
+      </button>
+    </div>
+  );
+
+  // AI tab: chat panel component
+  const AITabContent = (
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <AIChatPanel displayMode={displayMode} sidebar />
+    </div>
+  );
+
+  // Presentation tab content
+  const PresentationTabContent = (
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <PresentationPanel displayMode={displayMode} />
+    </div>
+  );
+
   if (!selectedNode) {
     return (
       <div
         ref={panelRef}
         style={{ width }}
-        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col ${className}`}
+        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${className}`}
       >
         {ResizeHandle}
         {ActionButtons}
-        <div className={`flex-1 flex items-center justify-center text-gray-400 ${isIconMode ? 'p-2' : 'p-4'}`}>
-          <div className="text-center">
-            <svg className={`mx-auto mb-2 text-gray-300 ${isIconMode ? 'w-6 h-6' : 'w-10 h-10'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-            </svg>
-            {!isIconMode && <p className={`${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Select a node</p>}
+        {TabBar}
+        {panelTab === 'ai' ? AITabContent : panelTab === 'presentation' ? PresentationTabContent : (
+          <div className={`flex-1 flex items-center justify-center text-gray-400 ${isIconMode ? 'p-2' : 'p-4'}`}>
+            <div className="text-center">
+              <svg className={`mx-auto mb-2 text-gray-300 ${isIconMode ? 'w-6 h-6' : 'w-10 h-10'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+              {!isIconMode && <p className={`${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{t('ai.selectNode')}</p>}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -319,10 +431,12 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
       <div
         ref={panelRef}
         style={{ width }}
-        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col ${className}`}
+        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${className}`}
       >
         {ResizeHandle}
         {ActionButtons}
+        {TabBar}
+        {panelTab === 'ai' ? AITabContent : panelTab === 'presentation' ? PresentationTabContent : (
         <div className={isIconMode ? 'p-2' : 'p-3 flex-1 overflow-y-auto'}>
         {isIconMode ? (
           <div className="flex flex-col items-center gap-2">
@@ -434,6 +548,69 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
                   </div>
                 </div>
 
+                {/* Description with AI button */}
+                {!isCompactMode && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Description</label>
+                      <button
+                        onClick={async () => {
+                          if (!selectedNodeId || aiDescribing) return;
+                          setAiDescribing(true);
+                          try {
+                            const connectedEdges = edges.filter(e => e.source === selectedNodeId || e.target === selectedNodeId);
+                            const connections = connectedEdges.map(e => {
+                              const otherId = e.source === selectedNodeId ? e.target : e.source;
+                              const other = nodes.find(n => n.id === otherId);
+                              return other?.data?.label || otherId;
+                            });
+                            const res = await fetch('/api/ai/describe', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                nodeId: selectedNodeId,
+                                node: { type: selectedNode.type, label: selectedNode.data.label, connections },
+                                locale,
+                              }),
+                            });
+                            const data = await res.json();
+                            if (res.ok && data.descriptions?.[selectedNodeId]) {
+                              const updatedNodes = nodes.map(n =>
+                                n.id === selectedNodeId
+                                  ? { ...n, data: { ...n.data, description: data.descriptions[selectedNodeId] } }
+                                  : n
+                              );
+                              setNodes(updatedNodes as AppNode[]);
+                              markDirty();
+                            }
+                          } catch { /* ignore */ } finally {
+                            setAiDescribing(false);
+                          }
+                        }}
+                        disabled={aiDescribing}
+                        className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors disabled:opacity-50"
+                      >
+                        {aiDescribing ? (
+                          <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        )}
+                        {t('ai.describe')}
+                      </button>
+                    </div>
+                    {selectedNode.data.description && (
+                      <div className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400">
+                        {selectedNode.data.description}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Expand button */}
                 {onExpandNode && !isCompactMode && (
                   <button
@@ -465,6 +642,7 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
           </>
         )}
         </div>
+        )}
       </div>
     );
   }
@@ -475,42 +653,45 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
       <div
         ref={panelRef}
         style={{ width }}
-        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col ${className}`}
+        className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${className}`}
       >
         {ResizeHandle}
         {ActionButtons}
-        <div className="p-3 flex flex-col items-center gap-3">
-          {/* Shape type icon */}
-          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center" title={shapeData?.shapeType}>
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={1.5} />
-            </svg>
-          </div>
+        {TabBar}
+        {panelTab === 'ai' ? AITabContent : panelTab === 'presentation' ? PresentationTabContent : (
+          <div className="flex-1 overflow-y-auto min-h-0 p-3 flex flex-col items-center gap-3">
+            {/* Shape type icon */}
+            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center" title={shapeData?.shapeType}>
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={1.5} />
+              </svg>
+            </div>
 
-          {/* Fill color picker */}
-          <div className="relative group">
-            <input
-              type="color"
-              value={fillColor}
-              onChange={(e) => handleFillColorChange(e.target.value)}
-              className="w-10 h-10 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
-              title="Fill color"
-            />
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">Fill</span>
-          </div>
+            {/* Fill color picker */}
+            <div className="relative group">
+              <input
+                type="color"
+                value={fillColor}
+                onChange={(e) => handleFillColorChange(e.target.value)}
+                className="w-10 h-10 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-blue-300 transition-colors"
+                title="Fill color"
+              />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">Fill</span>
+            </div>
 
-          {/* Border color picker */}
-          <div className="relative group">
-            <input
-              type="color"
-              value={borderColor}
-              onChange={(e) => handleBorderColorChange(e.target.value)}
-              className="w-10 h-10 rounded-xl border-2 border-gray-300 cursor-pointer hover:border-blue-300 transition-colors"
-              title="Border color"
-            />
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">Border</span>
+            {/* Border color picker */}
+            <div className="relative group">
+              <input
+                type="color"
+                value={borderColor}
+                onChange={(e) => handleBorderColorChange(e.target.value)}
+                className="w-10 h-10 rounded-xl border-2 border-gray-300 cursor-pointer hover:border-blue-300 transition-colors"
+                title="Border color"
+              />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">Border</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -519,14 +700,17 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
     <div
       ref={panelRef}
       style={{ width }}
-      className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col ${className}`}
+      className={`relative bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col ${className}`}
     >
       {ResizeHandle}
       {ActionButtons}
+      {TabBar}
+      {panelTab === 'ai' ? AITabContent : panelTab === 'presentation' ? PresentationTabContent : (
+      <div className="flex-1 overflow-y-auto min-h-0">
       {/* Header */}
       <div className={`border-b border-gray-100 dark:border-gray-800 ${isCompactMode ? 'p-2' : 'p-3'} flex items-center justify-between`}>
         <div>
-          <h3 className={`font-semibold text-gray-700 dark:text-gray-300 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>Properties</h3>
+          <h3 className={`font-semibold text-gray-700 dark:text-gray-300 ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{t('ai.properties')}</h3>
           <p className={`text-gray-500 dark:text-gray-400 capitalize ${isCompactMode ? 'text-[10px]' : 'text-xs'}`}>{shapeData?.shapeType}</p>
         </div>
         {onExpandNode && !isCompactMode && (
@@ -656,6 +840,8 @@ export function PropertyPanel({ className = '', onShowSaved, onClose, onExpandNo
           </div>
         )}
       </div>
+      </div>
+      )}
     </div>
   );
 }

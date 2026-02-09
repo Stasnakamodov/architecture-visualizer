@@ -36,6 +36,7 @@ import { StepEditToolbar } from './StepEditToolbar';
 import { ScenarioToolbar } from './ScenarioToolbar';
 import { useTemporalStore } from './useTemporalStore';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { PresentationOverlay } from '../presentation/PresentationOverlay';
 import { useHydration } from '@/hooks/useHydration';
 import { applyLayout, type LayoutType, type LayoutDirection, shouldUsePresentationRouting } from '@/lib/layout';
 import type { AppNode, AppEdge, ShapeNodeData } from '@/types/canvas';
@@ -99,6 +100,7 @@ function CanvasViewerInner({
   const {
     viewMode,
     selectNode,
+    selectEdge,
     selectedNodeId,
     selectedNodeIds,
     toggleNodeSelection,
@@ -133,6 +135,7 @@ function CanvasViewerInner({
     activeScenarioId,
     getCanvasNodeIdsForStep,
     removeNodeFromCurrentStep,
+    isPresentationMode,
   } = useCanvasStore();
 
   const reactFlow = useReactFlow();
@@ -625,6 +628,13 @@ function CanvasViewerInner({
     [selectNode, isSelectingForGroup, toggleNodeForGroup, editingStepId, toggleNodeInStep]
   );
 
+  const onEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: AppEdge) => {
+      selectEdge(edge.id);
+    },
+    [selectEdge]
+  );
+
   const onNodeDoubleClick = useCallback(
     (_: React.MouseEvent, node: AppNode) => {
       // For comments and shapes, open the detail modal for editing
@@ -904,6 +914,7 @@ function CanvasViewerInner({
         onConnect={onConnect}
         onNodesDelete={onNodesDelete}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onPaneClick={onPaneClick}
         onDoubleClick={onPaneDoubleClick}
@@ -1046,7 +1057,7 @@ function CanvasViewerInner({
 
       {/* Property Panel */}
       <PropertyPanel
-        className="h-full hidden lg:block"
+        className="h-full hidden lg:flex"
         onShowSaved={onShowSaved}
         onClose={onClose}
         onExpandNode={handleExpandNode}
@@ -1061,6 +1072,9 @@ function CanvasViewerInner({
           />
         )}
       </AnimatePresence>
+
+      {/* Presentation Mode Overlay */}
+      {isPresentationMode && <PresentationOverlay />}
     </div>
   );
 }

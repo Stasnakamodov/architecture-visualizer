@@ -1,4 +1,5 @@
-import type { AppNode, AppEdge, Step } from '@/types/canvas';
+import type { AppNode, AppEdge, Step, Presentation } from '@/types/canvas';
+import type { Scenario } from '@/stores/canvasStore';
 
 export interface VisualGroup {
   id: string;
@@ -18,6 +19,8 @@ export interface SavedCanvas {
   viewport: { x: number; y: number; zoom: number };
   visualGroups?: VisualGroup[];
   steps?: Step[];
+  scenarios?: Scenario[];
+  presentations?: Presentation[];
   thumbnail?: string;
 }
 
@@ -128,6 +131,8 @@ export function duplicateCanvas(id: string): SavedCanvas | null {
     viewport: canvas.viewport,
     visualGroups: canvas.visualGroups,
     steps: canvas.steps,
+    scenarios: canvas.scenarios,
+    presentations: canvas.presentations,
   });
 }
 
@@ -198,6 +203,8 @@ export function importCanvas(jsonString: string): SavedCanvas | null {
       viewport: data.viewport || { x: 0, y: 0, zoom: 1 },
       visualGroups: data.visualGroups,
       steps: data.steps,
+      scenarios: data.scenarios,
+      presentations: data.presentations,
     });
   } catch {
     return null;

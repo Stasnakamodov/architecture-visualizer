@@ -18,6 +18,7 @@ export interface Database {
           thumbnail_url: string | null;
           tags: string[];
           is_public: boolean;
+          presentations: Json;
           created_at: string;
           updated_at: string;
         };
@@ -29,6 +30,7 @@ export interface Database {
           thumbnail_url?: string | null;
           tags?: string[];
           is_public?: boolean;
+          presentations?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -40,6 +42,36 @@ export interface Database {
           thumbnail_url?: string | null;
           tags?: string[];
           is_public?: boolean;
+          presentations?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      public_presentations: {
+        Row: {
+          id: string;
+          project_id: string;
+          presentation_id: string;
+          slug: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          presentation_id: string;
+          slug?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          presentation_id?: string;
+          slug?: string;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };

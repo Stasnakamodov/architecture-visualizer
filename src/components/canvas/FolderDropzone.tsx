@@ -8,6 +8,7 @@ import {
 } from '@/lib/converters/folderToCanvas';
 import type { AppNode, AppEdge } from '@/types/canvas';
 import { useTranslation } from '@/i18n/context';
+import { processDirectory } from '@/lib/utils/fileProcessing';
 
 interface FolderDropzoneProps {
   onImport: (data: {
@@ -62,6 +63,8 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
         const items = e.dataTransfer.items;
         const files: { name: string; content: string }[] = [];
 
+        const mdFilter = (name: string) => name.endsWith('.md');
+
         // Process dropped items
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
@@ -70,9 +73,10 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
             const entry = item.webkitGetAsEntry?.();
 
             if (entry?.isDirectory) {
-              // Process directory
+              // Process directory — only .md files
               const dirFiles = await processDirectory(
-                entry as FileSystemDirectoryEntry
+                entry as FileSystemDirectoryEntry,
+                mdFilter
               );
               files.push(...dirFiles);
             } else if (entry?.isFile && entry.name.endsWith('.md')) {
@@ -209,54 +213,3 @@ export function FolderDropzone({ onImport }: FolderDropzoneProps) {
   );
 }
 
-// Helper to process directory entries recursively
-async function processDirectory(
-  entry: FileSystemDirectoryEntry
-): Promise<{ name: string; content: string }[]> {
-  const files: { name: string; content: string }[] = [];
-
-  const readEntries = (
-    dirReader: FileSystemDirectoryReader
-  ): Promise<FileSystemEntry[]> => {
-    return new Promise((resolve, reject) => {
-      dirReader.readEntries(resolve, reject);
-    });
-  };
-
-  const readFile = (fileEntry: FileSystemFileEntry): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      fileEntry.file(resolve, reject);
-    });
-  };
-
-  const processEntry = async (entry: FileSystemEntry): Promise<void> => {
-    if (entry.isFile && entry.name.endsWith('.md')) {
-      const file = await readFile(entry as FileSystemFileEntry);
-      const content = await file.text();
-      files.push({ name: file.name, content });
-    } else if (entry.isDirectory) {
-      const dirReader = (entry as FileSystemDirectoryEntry).createReader();
-      let entries = await readEntries(dirReader);
-
-      // readEntries may not return all entries at once
-      while (entries.length > 0) {
-        for (const e of entries) {
-          await processEntry(e);
-        }
-        entries = await readEntries(dirReader);
-      }
-    }
-  };
-
-  const dirReader = entry.createReader();
-  let entries = await readEntries(dirReader);
-
-  while (entries.length > 0) {
-    for (const e of entries) {
-      await processEntry(e);
-    }
-    entries = await readEntries(dirReader);
-  }
-
-  return files;
-}
