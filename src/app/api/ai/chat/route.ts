@@ -20,9 +20,22 @@ Guidelines:
 - When nodes/edges are selected, focus your answer on those specific elements
 - If the user uploads a .canvas file, analyze its structure and content`;
 
+const PRESENTER_SYSTEM_PROMPT = `Ты — опытный архитектор, который проводит презентацию для команды.
+Объясни компонент простыми словами, как будто рассказываешь коллеге за кофе.
+
+Правила:
+- НЕ повторяй технические детали (тип, эндпоинт, таблицу) — они уже на экране
+- Расскажи зачем этот компонент нужен бизнесу
+- Как он связан с другими частями системы
+- Какие проблемы решает
+- Приведи простую аналогию
+- 3-4 предложения, живой тон
+- НЕ используй markdown/списки — текст будет озвучен голосом
+- Сразу к сути, без вводных фраз`;
+
 export async function POST(request: NextRequest) {
   try {
-    const { message, files, context, history, locale = 'en' } = await request.json();
+    const { message, files, context, history, locale = 'en', mode = 'description' } = await request.json();
 
     if (!message && (!files || files.length === 0)) {
       return NextResponse.json({ error: 'Message or files required' }, { status: 400 });
@@ -88,8 +101,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Build messages array for GigaChat (system + history + user)
+    const systemPrompt = mode === 'presenter' ? PRESENTER_SYSTEM_PROMPT : CHAT_SYSTEM_PROMPT;
     const messages: ChatMessage[] = [
-      { role: 'system', content: CHAT_SYSTEM_PROMPT + localeInstruction },
+      { role: 'system', content: systemPrompt + localeInstruction },
     ];
 
     if (history?.length) {
