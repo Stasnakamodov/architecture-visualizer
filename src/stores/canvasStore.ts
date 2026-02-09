@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { temporal } from 'zundo';
 import type { Viewport, XYPosition } from '@xyflow/react';
-import type { AppNode, AppEdge, AppEdgeData, ViewMode, ShapeType, ShapeNodeData, Step, StepMode } from '@/types/canvas';
+import type { AppNode, AppEdge, AppEdgeData, ViewMode, ShapeType, ShapeNodeData, Step, StepMode, Presentation, PresentationStepNotes, SubSlide, RecordedPath } from '@/types/canvas';
 import type { LayoutType } from '@/lib/layout';
 
 // Save status types
@@ -59,10 +59,17 @@ interface CanvasState {
   visualGroups: VisualGroup[];
   scenarios: Scenario[];
   activeScenarioId: string | null;
+  presentations: Presentation[];
+  activePresentationId: string | null;
+  isPresentationMode: boolean;
+  presenterViewActive: boolean;
+  isRecordingPath: boolean;
+  recordedSubSlides: SubSlide[];
   viewport: Viewport;
   viewMode: ViewMode;
   selectedNodeId: string | null;
   selectedNodeIds: string[];
+  selectedEdgeId: string | null;
   selectedDocumentId: string | null;
   selectedFolderId: string | null;
   activeVisualGroupId: string | null; // Currently active group for filtering
@@ -120,6 +127,7 @@ interface CanvasState {
   setViewport: (viewport: Viewport) => void;
   setViewMode: (mode: ViewMode) => void;
   selectNode: (nodeId: string | null) => void;
+  selectEdge: (edgeId: string | null) => void;
   toggleNodeSelection: (nodeId: string) => void;
   clearSelection: () => void;
   setEditing: (isEditing: boolean) => void;
@@ -151,6 +159,27 @@ interface CanvasState {
   deleteScenario: (id: string) => void;
   setActiveScenario: (id: string | null) => void;
   syncActiveScenarioSteps: () => void;
+
+  // Presentation actions
+  createPresentation: (name: string, scenarioIds: string[]) => string;
+  updatePresentation: (id: string, updates: Partial<Pick<Presentation, 'name' | 'scenarioIds' | 'settings' | 'publicSlug' | 'isPublic'>>) => void;
+  deletePresentation: (id: string) => void;
+  setActivePresentation: (id: string | null) => void;
+  startPresentationMode: (id: string) => void;
+  exitPresentationMode: () => void;
+  togglePresenterView: () => void;
+  setPresentationNotes: (presentationId: string, stepKey: string, notes: PresentationStepNotes) => void;
+
+  // Recording actions
+  startRecording: () => void;
+  recordSubSlide: (subSlide: SubSlide) => void;
+  stopRecording: () => void;
+  saveRecordedPath: (presentationId: string) => void;
+  invalidateRecordedPaths: () => void;
+
+  // AI batch import actions
+  importAISteps: (steps: Step[]) => void;
+  importAIScenarios: (scenarios: Scenario[]) => void;
 
   // Group selection mode
   startGroupSelection: () => void;
@@ -223,10 +252,17 @@ const initialState = {
   visualGroups: [] as VisualGroup[],
   scenarios: [] as Scenario[],
   activeScenarioId: null as string | null,
+  presentations: [] as Presentation[],
+  activePresentationId: null as string | null,
+  isPresentationMode: false,
+  presenterViewActive: false,
+  isRecordingPath: false,
+  recordedSubSlides: [] as SubSlide[],
   viewport: { x: 0, y: 0, zoom: 1 },
   viewMode: 'technical' as ViewMode,
   selectedNodeId: null as string | null,
   selectedNodeIds: [] as string[],
+  selectedEdgeId: null as string | null,
   selectedDocumentId: null as string | null,
   selectedFolderId: null as string | null,
   activeVisualGroupId: null as string | null,
@@ -280,12 +316,28 @@ export const useCanvasStore = create<CanvasState>()(
         ...initialState,
 
         // Actions
-        setNodes: (nodes) => set({ nodes }),
-        setEdges: (edges) => set({ edges }),
+        setNodes: (nodes) => {
+          const prev = get().nodes;
+          set({ nodes });
+          // Invalidate recorded paths if node set changed (add/remove)
+          if (prev.length !== nodes.length || prev.some((n, i) => n.id !== nodes[i]?.id)) {
+            get().invalidateRecordedPaths();
+          }
+        },
+        setEdges: (edges) => {
+          const prev = get().edges;
+          set({ edges });
+          // Invalidate recorded paths if edge topology changed
+          if (prev.length !== edges.length ||
+              prev.some((e, i) => e.id !== edges[i]?.id || e.source !== edges[i]?.source || e.target !== edges[i]?.target)) {
+            get().invalidateRecordedPaths();
+          }
+        },
         setVisualGroups: (visualGroups) => set({ visualGroups, activeVisualGroupId: null }),
         setViewport: (viewport) => set({ viewport }),
         setViewMode: (viewMode) => set({ viewMode, selectedNodeId: null, selectedNodeIds: [] }),
-        selectNode: (selectedNodeId) => set({ selectedNodeId, selectedNodeIds: selectedNodeId ? [selectedNodeId] : [] }),
+        selectNode: (selectedNodeId) => set({ selectedNodeId, selectedNodeIds: selectedNodeId ? [selectedNodeId] : [], selectedEdgeId: null }),
+        selectEdge: (selectedEdgeId) => set({ selectedEdgeId, selectedNodeId: null, selectedNodeIds: [] }),
         toggleNodeSelection: (nodeId) => {
           const { selectedNodeIds } = get();
           if (selectedNodeIds.includes(nodeId)) {
@@ -294,9 +346,13 @@ export const useCanvasStore = create<CanvasState>()(
             set({ selectedNodeIds: [...selectedNodeIds, nodeId] });
           }
         },
-        clearSelection: () => set({ selectedNodeId: null, selectedNodeIds: [] }),
+        clearSelection: () => set({ selectedNodeId: null, selectedNodeIds: [], selectedEdgeId: null }),
         setEditing: (isEditing) => set({ isEditing }),
-        resetCanvas: () => set({
+        resetCanvas: () => {
+          if (typeof window !== 'undefined') {
+            try { localStorage.removeItem('arch-viz-working-state'); } catch { /* ignore */ }
+          }
+          return set({
           ...initialState,
           _hasHydrated: true, // НЕ сбрасывать — onRehydrateStorage вызывается только один раз
           isDirty: false,
@@ -315,7 +371,14 @@ export const useCanvasStore = create<CanvasState>()(
           preStepperPositions: null,
           baseSteps: null,
           activeScenarioId: null,
-        }),
+          presentations: [],
+          activePresentationId: null,
+          isPresentationMode: false,
+          presenterViewActive: false,
+          isRecordingPath: false,
+          recordedSubSlides: [],
+        });
+        },
         createGroup: (label) => {
           const { nodes, selectedNodeIds, edges } = get();
           if (selectedNodeIds.length < 2) return;
@@ -720,6 +783,166 @@ export const useCanvasStore = create<CanvasState>()(
               s.id === activeScenarioId ? { ...s, steps: steps.map(st => ({ ...st, nodeIds: [...st.nodeIds], canvasNodeIds: [...(st.canvasNodeIds || [])], nodePositions: st.nodePositions ? { ...st.nodePositions } : null, viewport: st.viewport ? { ...st.viewport } : null })) } : s
             ),
           });
+        },
+
+        // Presentation actions
+        createPresentation: (name, scenarioIds) => {
+          const { presentations } = get();
+          const id = `pres-${Date.now()}`;
+          const now = new Date().toISOString();
+          const newPresentation: Presentation = {
+            id,
+            name,
+            scenarioIds,
+            settings: { autoplay: false, autoplayInterval: 5000 },
+            notes: {},
+            publicSlug: null,
+            isPublic: false,
+            createdAt: now,
+            updatedAt: now,
+          };
+          set({ presentations: [...presentations, newPresentation], activePresentationId: id });
+          get().markDirty();
+          return id;
+        },
+
+        updatePresentation: (id, updates) => {
+          const { presentations } = get();
+          set({
+            presentations: presentations.map(p =>
+              p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
+            ),
+          });
+          get().markDirty();
+        },
+
+        deletePresentation: (id) => {
+          const { presentations, activePresentationId } = get();
+          set({
+            presentations: presentations.filter(p => p.id !== id),
+            activePresentationId: activePresentationId === id ? null : activePresentationId,
+          });
+          get().markDirty();
+        },
+
+        setActivePresentation: (id) => {
+          set({ activePresentationId: id });
+        },
+
+        startPresentationMode: (id) => {
+          get().syncActiveScenarioSteps();
+          set({ isPresentationMode: true, activePresentationId: id });
+        },
+
+        exitPresentationMode: () => {
+          set({ isPresentationMode: false, presenterViewActive: false });
+        },
+
+        togglePresenterView: () => {
+          set({ presenterViewActive: !get().presenterViewActive });
+        },
+
+        setPresentationNotes: (presentationId, stepKey, notes) => {
+          const { presentations } = get();
+          set({
+            presentations: presentations.map(p =>
+              p.id === presentationId
+                ? { ...p, notes: { ...p.notes, [stepKey]: notes }, updatedAt: new Date().toISOString() }
+                : p
+            ),
+          });
+          get().markDirty();
+        },
+
+        // Recording actions
+        startRecording: () => {
+          set({ isRecordingPath: true, recordedSubSlides: [] });
+        },
+
+        recordSubSlide: (subSlide) => {
+          const { isRecordingPath, recordedSubSlides } = get();
+          if (!isRecordingPath) return;
+          set({ recordedSubSlides: [...recordedSubSlides, subSlide] });
+        },
+
+        stopRecording: () => {
+          set({ isRecordingPath: false });
+        },
+
+        saveRecordedPath: (presentationId) => {
+          const { presentations, recordedSubSlides } = get();
+          const recordedPath: RecordedPath = {
+            subSlideSequence: recordedSubSlides,
+            recordedAt: new Date().toISOString(),
+          };
+          set({
+            presentations: presentations.map(p =>
+              p.id === presentationId
+                ? { ...p, recordedPath, updatedAt: new Date().toISOString() }
+                : p
+            ),
+            isRecordingPath: false,
+            recordedSubSlides: [],
+          });
+          get().markDirty();
+        },
+
+        /** Nullify recordedPath on all presentations (graph structure changed) */
+        invalidateRecordedPaths: () => {
+          const { presentations } = get();
+          const hasRecorded = presentations.some(p => p.recordedPath);
+          if (!hasRecorded) return;
+          set({
+            presentations: presentations.map(p =>
+              p.recordedPath
+                ? { ...p, recordedPath: null, updatedAt: new Date().toISOString() }
+                : p
+            ),
+          });
+          get().markDirty();
+        },
+
+        // AI batch import actions
+        importAISteps: (aiSteps) => {
+          const { nodes } = get();
+          // Snapshot current node positions for all steps
+          const positions: Record<string, { x: number; y: number }> = {};
+          nodes.forEach((node) => {
+            positions[node.id] = { x: node.position.x, y: node.position.y };
+          });
+          const stepsWithPositions = aiSteps.map(s => ({
+            ...s,
+            canvasNodeIds: s.canvasNodeIds.length > 0 ? s.canvasNodeIds : nodes.map(n => n.id),
+            nodePositions: s.nodePositions || positions,
+          }));
+          set({
+            steps: stepsWithPositions,
+            activeStepId: stepsWithPositions[0]?.id || null,
+            isStepperActive: stepsWithPositions.length > 0,
+          });
+          get().markDirty();
+        },
+
+        importAIScenarios: (aiScenarios) => {
+          const { scenarios, nodes } = get();
+          // Snapshot current node positions
+          const positions: Record<string, { x: number; y: number }> = {};
+          nodes.forEach((node) => {
+            positions[node.id] = { x: node.position.x, y: node.position.y };
+          });
+          // Add positions to all steps in all scenarios
+          const enriched = aiScenarios.map(sc => ({
+            ...sc,
+            steps: sc.steps.map(s => ({
+              ...s,
+              canvasNodeIds: s.canvasNodeIds.length > 0 ? s.canvasNodeIds : nodes.map(n => n.id),
+              nodePositions: s.nodePositions || positions,
+            })),
+          }));
+          set({
+            scenarios: [...scenarios, ...enriched],
+          });
+          get().markDirty();
         },
 
         // Group selection mode
@@ -1191,13 +1414,13 @@ export const useCanvasStore = create<CanvasState>()(
         exportData: () => {
           // Sync active scenario steps before exporting
           get().syncActiveScenarioSteps();
-          const { nodes, edges, documents, folders, visualGroups, scenarios, baseSteps, steps, viewport, viewMode } = get();
+          const { nodes, edges, documents, folders, visualGroups, scenarios, presentations, baseSteps, steps, viewport, viewMode } = get();
           // Export base steps (or current if no scenario active)
           const exportSteps = baseSteps || steps;
           const exportObj = {
             version: 1,
             exportedAt: new Date().toISOString(),
-            data: { nodes, edges, documents, folders, visualGroups, scenarios, steps: exportSteps, viewport, viewMode },
+            data: { nodes, edges, documents, folders, visualGroups, scenarios, presentations, steps: exportSteps, viewport, viewMode },
           };
           return JSON.stringify(exportObj, null, 2);
         },
@@ -1231,6 +1454,7 @@ export const useCanvasStore = create<CanvasState>()(
               folders: data.folders || [],
               visualGroups: data.visualGroups || [],
               scenarios: migratedScenarios,
+              presentations: data.presentations || [],
               steps: migratedSteps,
               viewport: data.viewport || { x: 0, y: 0, zoom: 1 },
               viewMode: data.viewMode || 'technical',
@@ -1248,6 +1472,9 @@ export const useCanvasStore = create<CanvasState>()(
               preStepperPositions: null,
               baseSteps: null,
               activeScenarioId: null,
+              activePresentationId: null,
+              isPresentationMode: false,
+              presenterViewActive: false,
             });
 
             return { success: true };
@@ -1327,9 +1554,10 @@ export const useCanvasStore = create<CanvasState>()(
           // Это предотвращает переполнение localStorage (QuotaExceededError).
           viewMode: state.viewMode,
         }),
-        onRehydrateStorage: () => () => {
-          useCanvasStore.setState({ _hasHydrated: true });
-        },
+        // _hasHydrated ставится ТОЛЬКО в initializeStore — там же восстанавливается working state.
+        // Если поставить здесь, onRehydrateStorage (микротаск) сработает раньше setTimeout-fallback,
+        // initializeStore увидит _hasHydrated=true и пропустит восстановление данных.
+        onRehydrateStorage: () => () => {},
       }
     ),
     {
@@ -1347,27 +1575,118 @@ export const useCanvasStore = create<CanvasState>()(
   )
 );
 
-// Гарантированно установить _hasHydrated
+// Единая инициализация: восстановить working state + пометить hydrated атомарно
 if (typeof window !== 'undefined') {
-  const setHydrated = () => {
-    if (!useCanvasStore.getState()._hasHydrated) {
+  const initializeStore = () => {
+    if (useCanvasStore.getState()._hasHydrated) return; // Уже инициализировано
+
+    // Восстановить данные рабочего состояния и пометить гидратацию АТОМАРНО —
+    // один setState гарантирует, что подписчики увидят данные и _hasHydrated: true одновременно.
+    const working = loadWorkingState();
+    if (working && working.nodes.length > 0) {
+      useCanvasStore.setState({
+        nodes: working.nodes,
+        edges: working.edges,
+        visualGroups: working.visualGroups,
+        scenarios: working.scenarios,
+        presentations: working.presentations,
+        steps: working.steps,
+        baseSteps: working.baseSteps,
+        activeScenarioId: working.activeScenarioId,
+        viewport: working.viewport,
+        currentCanvasId: working.currentCanvasId,
+        currentCanvasName: working.currentCanvasName,
+        // isCanvasOpen НЕ восстанавливается — всегда начинаем с false
+        _hasHydrated: true,
+      });
+      console.log('[working-state] restored:', working.nodes.length, 'nodes');
+    } else {
       useCanvasStore.setState({ _hasHydrated: true });
     }
   };
 
-  // Попробовать persist API (может не работать через temporal обёртку)
+  // Попробовать persist API для максимально ранней инициализации
   try {
     if (useCanvasStore.persist?.hasHydrated()) {
-      setHydrated();
+      initializeStore();
     }
-    useCanvasStore.persist?.onFinishHydration(setHydrated);
+    useCanvasStore.persist?.onFinishHydration(initializeStore);
   } catch {
-    // persist API недоступен — fallback
+    // persist API недоступен через temporal обёртку
   }
 
-  // Безусловный fallback: через 100ms гидратация точно завершена
-  setTimeout(setHydrated, 100);
+  // Гарантированный fallback
+  setTimeout(initializeStore, 150);
+
+  // Подписка на дебаунсированное автосохранение
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  useCanvasStore.subscribe((state) => {
+    if (state.nodes.length === 0 && state.scenarios.length === 0) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveWorkingState(state);
+    }, 2000);
+  });
 }
 
-// Auto-save status больше не нужен — nodes/edges не персистятся через Zustand.
-// Статус сохранения управляется через isDirty/markDirty/markClean.
+// ============ Working State Auto-Save ============
+// Автоматически сохраняет рабочее состояние (nodes, edges, scenarios, presentations и т.д.)
+// в отдельный ключ localStorage с дебаунсом 2 секунды.
+// Восстанавливается при загрузке страницы — пользователь не теряет работу без кнопки Save.
+
+const WORKING_STATE_KEY = 'arch-viz-working-state';
+
+interface WorkingState {
+  nodes: AppNode[];
+  edges: AppEdge[];
+  visualGroups: VisualGroup[];
+  scenarios: Scenario[];
+  presentations: Presentation[];
+  steps: Step[];
+  baseSteps: Step[] | null;
+  activeScenarioId: string | null;
+  viewport: { x: number; y: number; zoom: number };
+  currentCanvasId: string | null;
+  currentCanvasName: string | null;
+}
+
+function saveWorkingState(state: CanvasState): void {
+  try {
+    const working: WorkingState = {
+      nodes: state.nodes,
+      edges: state.edges,
+      visualGroups: state.visualGroups,
+      scenarios: state.scenarios,
+      presentations: state.presentations,
+      steps: state.steps,
+      baseSteps: state.baseSteps,
+      activeScenarioId: state.activeScenarioId,
+      viewport: state.viewport,
+      currentCanvasId: state.currentCanvasId,
+      currentCanvasName: state.currentCanvasName,
+    };
+    localStorage.setItem(WORKING_STATE_KEY, JSON.stringify(working));
+  } catch (e) {
+    // QuotaExceededError — не критично, просто не сохраняем
+    console.warn('[working-state] save failed:', e);
+  }
+}
+
+function loadWorkingState(): WorkingState | null {
+  try {
+    const raw = localStorage.getItem(WORKING_STATE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as WorkingState;
+  } catch {
+    return null;
+  }
+}
+
+export function clearWorkingState(): void {
+  try {
+    localStorage.removeItem(WORKING_STATE_KEY);
+  } catch { /* ignore */ }
+}
+
+// restoreWorkingState logic is now in initializeStore above
